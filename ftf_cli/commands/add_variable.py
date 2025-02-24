@@ -33,17 +33,17 @@ def add_variable(name, type, description, options, path):
     with open(yaml_path, 'r') as yaml_file:
         data = yaml.safe_load(yaml_file)
 
-    # Ensure 'spec' and 'properties' exist in the data
+    # Ensure 'spec' and 'properties' sections
     if 'spec' not in data or not data['spec']:
         data['spec'] = {'type': 'object', 'properties': {}}
-    if 'properties' not in data['spec']:
+    if 'properties' not in data['spec'] or data['spec']['properties'] is None:
         data['spec']['properties'] = {}
 
     # Add the variable schema to the spec
     keys = name.split('.')
     sub_data = data['spec']['properties']
     for key in keys[:-1]:
-        if key not in sub_data:
+        if key not in sub_data or sub_data[key] is None:
             sub_data[key] = {'type': 'object', 'properties': {}}
         sub_data = sub_data[key]['properties']
     sub_data[keys[-1]] = variable_schema

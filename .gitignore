@@ -1,7 +1,7 @@
 # Exclude virtual environments
 new_venv/*
 *.egg-info
-
+test/test_intent
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
