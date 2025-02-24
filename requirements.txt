@@ -1,1 +1,4 @@
 Click
+Jinja2
+pyyaml
+python-hcl2

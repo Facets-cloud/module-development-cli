@@ -1,0 +1,16 @@
+intent: example-intent
+flavor: example-flavor
+version: 1.0
+clouds: [ aws ]
+spec:
+  title: Example Module
+  description: A test module using FTF CLI.
+  type: object
+  properties:
+inputs:
+outputs:
+sample:
+  kind: example-intent
+  flavor: example-flavor
+  version: "1.0"
+  spec:

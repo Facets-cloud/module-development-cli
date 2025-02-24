@@ -1,0 +1,1 @@
+recursive-include ftf_cli/commands/templates *
