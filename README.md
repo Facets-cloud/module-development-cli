@@ -1,6 +1,6 @@
 # FTF CLI
 
-FTF CLI is a command-line interface (CLI) tool that facilitates module generation and variable management in Terraform.
+FTF CLI is a command-line interface (CLI) tool that facilitates module generation, variable management, and validation in Terraform.
 
 ## Installation
 
@@ -58,6 +58,15 @@ After successful installation, you can use the `ftf` command to access CLI.
   ftf add-variable
   ```
   Provide the necessary variable details as prompted, such as Variable Name, Type, and Description.
+
+- **Validate Directory**
+
+  Validates the Terraform configuration and checks for formatting, initialization, and security violations using Checkov.
+  
+  ```bash
+  ftf validate-directory --path /your/path/to/module [--check-only]
+  ```
+  Use `--check-only` to verify formatting without applying changes.
 
 ## Contribution
 
