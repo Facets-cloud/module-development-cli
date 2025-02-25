@@ -8,7 +8,8 @@ setup(
     install_requires=[
         'Click',
         'Jinja2',
-        'pyyaml'
+        'pyyaml',
+        'checkov'
     ],
     entry_points='''
         [console_scripts]
