@@ -6,7 +6,7 @@ variable "instance" {
     version = string
     spec = object({
       parent = object({
-        child = string
+           child = string
       })
     })
   })
