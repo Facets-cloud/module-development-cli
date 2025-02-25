@@ -5,6 +5,9 @@ variable "instance" {
     flavor  = string
     version = string
     spec = object({
+      parent = object({
+        child = string
+      })
     })
   })
 }

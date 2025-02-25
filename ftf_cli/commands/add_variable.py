@@ -1,10 +1,12 @@
 import click
 import os
 import yaml
-from ftf_cli.utils import validate_facets_yaml, ALLOWED_TYPES
+from ftf_cli.utils import validate_facets_yaml, validate_variables_tf, ALLOWED_TYPES, update_spec_variable
+
 
 @click.command()
-@click.option('-n', '--name', prompt='Variable Name (dot-separated for nested)', type=str, help='Name allowing nested dot-separated variants.')
+@click.option('-n', '--name', prompt='Variable Name (dot-separated for nested)', type=str,
+              help='Name allowing nested dot-separated variants.')
 @click.option('-t', '--type', prompt='Variable Type', type=str, help='Given base JSON schema type.')
 @click.option('-d', '--description', type=str, help='Provides a description for the variable.')
 @click.option('--options', default='', help='For enums, offer aggregate option hierarchy.')
@@ -14,11 +16,14 @@ def add_variable(name, type, description, options, path):
     # Validate the facets.yaml file in the given path
     yaml_path = validate_facets_yaml(path)
 
+    # Validate the variables.tf file
+    variables_tf_path = validate_variables_tf(path)
+
     # Check against allowed types
     if type not in ALLOWED_TYPES:
         raise click.UsageError(f"Type '{type}' is not allowed. Must be one of: {', '.join(ALLOWED_TYPES)}.")
 
-    # Prepare variable schema entry
+    # Prepare variable schema entry for facets.yaml
     variable_schema = {
         'type': 'string' if type == 'enum' else type,
         'description': description
@@ -31,7 +36,7 @@ def add_variable(name, type, description, options, path):
 
     # Load existing YAML data
     with open(yaml_path, 'r') as yaml_file:
-        data = yaml.safe_load(yaml_file)
+        data = yaml.safe_load(yaml_file) or {}
 
     # Ensure 'spec' and 'properties' sections
     if 'spec' not in data or not data['spec']:
@@ -51,5 +56,15 @@ def add_variable(name, type, description, options, path):
     # Save changes back to the facets.yaml file
     with open(yaml_path, 'w') as yaml_file:
         yaml.dump(data, yaml_file)
+
+    with open(variables_tf_path, "r") as file:
+        terraform_code = file.read()
+
+    updated_code = update_spec_variable(terraform_code, "instance", "spec", {
+        name: 'string' if type == 'enum' else type,
+    })
+
+    with open(variables_tf_path, "w") as file:
+        file.write(updated_code)
 
     click.echo(f"Variable '{name}' of type '{type}' added with description '{description}' in path '{path}'.")
