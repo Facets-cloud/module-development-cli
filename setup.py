@@ -8,6 +8,7 @@ setup(
     install_requires=[
         'Click',
         'Jinja2',
+        'pyyaml'
     ],
     entry_points='''
         [console_scripts]
