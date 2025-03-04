@@ -47,10 +47,13 @@ def validate_directory(path, check_only):
             click.echo("❌ Error: Terraform files are not correctly formatted. Please run `terraform fmt` locally to format the files.")
         else:
             click.echo(f"❌ An error occurred while executing: {e}")
+        raise e
     except click.UsageError as ue:
         click.echo(ue.message)
+        raise ue
     except Exception as e:
         click.echo(f"❌ Validation failed: {e}")
+        raise e
 
 
 if __name__ == "__main__":

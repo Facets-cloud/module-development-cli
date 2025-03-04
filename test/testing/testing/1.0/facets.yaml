@@ -1,18 +1,19 @@
-intent: testing
-flavor: testing
-version: "1.0"
-clouds: [ aws ]
+clouds:
+- aws
 description: testing
-spec:
-  title: testing
-  description: testing
-  type: object
+flavor: testing
+intent: testing
 outputs:
   default:
-     type: "@outputs/testing"
+    type: '@outputs/testing'
 sample:
-  kind: testing
-  flavor: testing
-  version: "1.0"
   disabled: true
-  spec:
+  flavor: testing
+  kind: testing
+  spec: null
+  version: '1.0'
+spec:
+  description: testing
+  title: testing
+  type: object
+version: '1.0'
