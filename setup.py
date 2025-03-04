@@ -8,8 +8,10 @@ setup(
     install_requires=[
         'Click',
         'Jinja2',
-        'pyyaml',
-        'checkov'
+        'PyYAML',
+        'checkov',
+        'jsonschema',
+        'requests'
     ],
     entry_points='''
         [console_scripts]
