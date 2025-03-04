@@ -1,6 +1,7 @@
-import configparser
 import os
 import re
+import configparser
+import yaml
 import jsonschema
 from jsonschema import validate, Draft7Validator
 import click
@@ -199,7 +200,8 @@ def validate_yaml(data):
     try:
         validate(instance=data, schema=yaml_schema)
     except jsonschema.exceptions.ValidationError as e:
-        raise click.UsageError(f'❌ facets.yaml is not a following Facets Schema: {e.message}')
+        print(e)
+        raise click.UsageError(f'❌ facets.yaml is not following Facets Schema: {e.message}')
     print("Facets YAML validation successful!")
     return True
 
@@ -240,7 +242,7 @@ def is_logged_in(profile):
         response = fetch_user_details(credentials['control_plane_url'], credentials['username'], credentials['token'])
         response.raise_for_status()
         click.echo('Successfully authenticated with the control plane.')
-        return True
+        return credentials  # Return credentials if login is successful
     except requests.exceptions.HTTPError as http_err:
         click.echo(f'HTTP error occurred: {http_err}')
         return False
