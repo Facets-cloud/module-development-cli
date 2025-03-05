@@ -100,7 +100,7 @@ After successful installation, you can use the `ftf` command to access CLI.
   Validate the Terraform configuration for formatting, initialization, and security violations using Checkov.
 
   ```bash
-  ftf validate-directory --path /your/path/to/module [--check-only]
+  ftf validate-directory  /your/path/to/module 
   ```
 
   **Options**:
