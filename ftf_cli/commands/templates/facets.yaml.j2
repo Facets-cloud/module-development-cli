@@ -1,16 +1,18 @@
 intent: {{ intent }}
 flavor: {{ flavor }}
-version: 1.0
+version: "1.0"
 clouds: [ {{ cloud }} ]
+description: {{ description }}
 spec:
   title: {{ title }}
   description: {{ description }}
   type: object
-  properties:
-inputs:
 outputs:
+  default:
+     type: "@outputs/{{ intent }}"
 sample:
   kind: {{ intent }}
   flavor: {{ flavor }}
   version: "1.0"
+  disabled: true
   spec:

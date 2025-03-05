@@ -1,0 +1,19 @@
+clouds:
+- aws
+description: testing
+flavor: testing
+intent: testing
+outputs:
+  default:
+    type: '@outputs/testing'
+sample:
+  disabled: true
+  flavor: testing
+  kind: testing
+  spec: null
+  version: '1.0'
+spec:
+  description: testing
+  title: testing
+  type: object
+version: '1.0'

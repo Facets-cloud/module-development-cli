@@ -1,9 +1,12 @@
 import os
 import re
-
-import click
+import configparser
 import yaml
-import hcl2
+import jsonschema
+from jsonschema import validate, Draft7Validator
+import click
+import requests
+
 
 ALLOWED_TYPES = ['string', 'number', 'integer', 'boolean', 'array', 'object', 'enum']
 
@@ -16,9 +19,12 @@ def validate_facets_yaml(path):
 
     try:
         with open(yaml_path, 'r') as f:
-            yaml.safe_load(f)
+            data = yaml.safe_load(f)
+            validate_yaml(data)
+
     except yaml.YAMLError as exc:
         raise click.UsageError(f'❌ facets.yaml is not a valid YAML file: {exc}')
+
 
     return yaml_path
 
@@ -106,3 +112,143 @@ def update_spec_variable(terraform_code, variable_name, spec_identifier, new_fie
         raise click.UsageError(f"❌ Spec block '{spec_identifier}' not found in the variable '{variable_name}'.")
 
     return "\n".join(updated_lines)
+
+
+yaml_schema = {
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "intent": {"type": "string"},
+        "flavor": {"type": "string"},
+        "version": {"type": "string"},
+        "description": {"type": "string"},
+        "clouds": {
+            "type": "array",
+            "items": {"type": "string"}
+        },
+        "spec": jsonschema.Draft7Validator.META_SCHEMA,
+        "outputs": {
+            "type": "object",
+            "patternProperties": {
+                ".*": {
+                    "type": "object",
+                    "properties": {
+                        "type": {"type": "string", "pattern": "^@outputs/.+"},
+                        "providers": {
+                            "type": "object",
+                            "patternProperties": {
+                                ".*": {
+                                    "type": "object",
+                                    "properties": {
+                                        "source": {"type": "string"},
+                                        "version": {"type": "string"},
+                                        "attributes": {
+                                            "type": "object",
+                                            "patternProperties": {
+                                                ".*": {"type": "string"}
+                                            }
+                                        }
+                                    },
+                                    "required": ["source", "version", "attributes"]
+                                }
+                            }
+                        }
+                    },
+                    "required": ["type"]
+                }
+            }
+        },
+        "inputs": {
+            "type": "object",
+            "patternProperties": {
+                ".*": {
+                    "type": "object",
+                    "properties": {
+                        "type": {"type": "string", "pattern": "^@outputs/.+"},
+                        "providers": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        }
+                    },
+                    "required": ["type"]
+                }
+            }
+        },
+        "sample": {"type": "object"},
+        "artifact_inputs": {
+            "type": "object",
+            "properties": {
+                "primary": {
+                    "type": "object",
+                    "properties": {
+                        "attribute_path": {"type": "string"},
+                        "artifact_type": {"type": "string", "enum": ["docker_image"]
+                        }
+                    },
+                    "required": ["attribute_path", "artifact_type"]
+                }
+            },
+            "required": ["primary"]
+        },
+        "metadata": jsonschema.Draft7Validator.META_SCHEMA
+    },
+    "required": ["intent", "flavor", "version", "description", "spec"]
+}
+
+
+def validate_yaml(data):
+    try:
+        validate(instance=data, schema=yaml_schema)
+    except jsonschema.exceptions.ValidationError as e:
+        print(e)
+        raise click.UsageError(f'❌ facets.yaml is not following Facets Schema: {e.message}')
+    print("Facets YAML validation successful!")
+    return True
+
+
+def fetch_user_details(cp_url, username, token):
+    return requests.get(f'{cp_url}/api/me', auth=(username, token))
+
+
+def store_credentials(profile, credentials):
+    config = configparser.ConfigParser()
+    cred_path = os.path.expanduser('~/.facets/credentials')
+    os.makedirs(os.path.dirname(cred_path), exist_ok=True)
+
+    if os.path.exists(cred_path):
+        config.read(cred_path)
+
+    config[profile] = credentials
+
+    with open(cred_path, 'w') as configfile:
+        config.write(configfile)
+
+
+def is_logged_in(profile):
+    config = configparser.ConfigParser()
+    cred_path = os.path.expanduser('~/.facets/credentials')
+
+    if not os.path.exists(cred_path):
+        click.echo('Credentials file not found. Please login first.')
+        return False
+
+    config.read(cred_path)
+    if profile not in config:
+        click.echo(f'Profile {profile} not found. Please login using this profile.')
+        return False
+
+    try:
+        credentials = config[profile]
+        response = fetch_user_details(credentials['control_plane_url'], credentials['username'], credentials['token'])
+        response.raise_for_status()
+        click.echo('Successfully authenticated with the control plane.')
+        return credentials  # Return credentials if login is successful
+    except requests.exceptions.HTTPError as http_err:
+        click.echo(f'HTTP error occurred: {http_err}')
+        return False
+    except KeyError as key_err:
+        click.echo(f'Missing credential information: {key_err}')
+        raise click.UsageError('Incomplete credentials found in profile. Please re-login.')
+    except Exception as err:
+        click.echo(f'An error occurred: {err}')
+        return False

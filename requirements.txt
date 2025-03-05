@@ -1,4 +1,5 @@
-Click
-Jinja2
-pyyaml
-checkov
+click
+PyYAML
+python-hcl2
+jsonschema
+requests

@@ -7,7 +7,7 @@ from checkov.terraform.runner import Runner
 
 
 @click.command()
-@click.option('-p', '--path', default='.', help='Path to the module directory containing facets.yaml')
+@click.argument('path', type=click.Path(exists=True))
 @click.option('--check-only', is_flag=True, help='Check if Terraform files are correctly formatted without modifying them.')
 def validate_directory(path, check_only):
     """Validate the Terraform module and its security aspects."""
@@ -47,10 +47,13 @@ def validate_directory(path, check_only):
             click.echo("❌ Error: Terraform files are not correctly formatted. Please run `terraform fmt` locally to format the files.")
         else:
             click.echo(f"❌ An error occurred while executing: {e}")
+        raise e
     except click.UsageError as ue:
         click.echo(ue.message)
+        raise ue
     except Exception as e:
         click.echo(f"❌ Validation failed: {e}")
+        raise e
 
 
 if __name__ == "__main__":
