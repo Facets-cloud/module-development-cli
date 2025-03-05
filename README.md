@@ -1,6 +1,6 @@
 # FTF CLI
 
-FTF CLI is a command-line interface (CLI) tool that facilitates module generation, variable management, and validation in Terraform.
+FTF CLI is a command-line interface (CLI) tool that facilitates module generation, variable management, validation, and registration in Terraform.
 
 ## Installation
 
@@ -70,28 +70,59 @@ After successful installation, you can use the `ftf` command to access CLI.
   ```bash
   ftf generate-module
   ```
+  Prompts for details such as Intent, Flavor, Cloud, Title, and Description.
 
-  Follow on-screen prompts to input module details like Intent, Flavor, Cloud, Title, and Description.
+  **Options**:
+  - `-i, --intent`: (prompt) The intent of the module.
+  - `-f, --flavor`: (prompt) The flavor of the module.
+  - `-c, --cloud`: (prompt) The cloud provider for the module.
+  - `-t, --title`: (prompt) The title of the module.
+  - `-d, --description`: (prompt) The description of the module.
+
 
 - **Add Variable**
-
-  Adds a new variable to the module.
+  Add a new variable to the module by specifying necessary details.
 
   ```bash
   ftf add-variable
   ```
+  Prompts for Variable Name, Type, and Description, with the option to specify via CLI.
 
-  Provide the necessary variable details as prompted, such as Variable Name, Type, and Description.
+  **Options**:
+  - `-n, --name`: (prompt/type) Variable Name, allows nested dot-separated variants.
+  - `-t, --type`: (prompt/type) Variable Type, given base JSON schema type.
+  - `-d, --description`: Provides a description for the variable.
+  - `--options`: For enums, offer aggregate option hierarchy.
+  - `-p, --path`: Path to the module directory containing facets.yaml
+
 
 - **Validate Directory**
-
-  Validates the Terraform configuration and checks for formatting, initialization, and security violations using Checkov.
+  Validate the Terraform configuration for formatting, initialization, and security violations using Checkov.
 
   ```bash
   ftf validate-directory --path /your/path/to/module [--check-only]
   ```
 
-  Use `--check-only` to verify formatting without applying changes.
+  **Options**:
+  - `--check-only`: Verifies formatting without applying changes.
+  - The command operates directly on the provided path without additional prompts.
+
+
+- **Preview Module**
+
+  Register or preview a module at the specified path.
+
+  ```bash
+   ftf preview-module /path/to/module [OPTIONS]
+  ```
+
+  **Options**:
+  - `-p, --profile`: Profile to use, defaults from environment.
+  - `-a, --auto-create-intent`: Automatically create intent if not exists.
+  - `-f, --publishable`: Indicates whether the module is publishable for production.
+  - `-g, --git-repo-url`: Git repository URL from where the code is taken.
+  - `-r, --git-ref`: Git reference or branch name.
+
 
 ## Contribution
 
