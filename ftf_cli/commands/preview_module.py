@@ -13,7 +13,8 @@ import yaml
 @click.option('-f', '--publishable', is_flag=True, default=False, help='Mark the module as publishable for production. Default is for development and testing (use false).')
 @click.option('-g', '--git-repo-url', default=lambda: os.getenv('GIT_REPO_URL'), help='The Git repository URL, defaults to environment variable GIT_REPO_URL if set')
 @click.option('-r', '--git-ref', default=lambda: os.getenv('GIT_REF', f'local-{getpass.getuser()}'), help='The Git reference, defaults to environment variable GIT_REF if set, or local user name')
-def preview_module(path, profile, auto_create_intent, publishable, git_repo_url, git_ref):
+@click.option('-f', '--publish', is_flag=True, default=False, help='Publish the module after preview if set.')
+def preview_module(path, profile, auto_create_intent, publishable, git_repo_url, git_ref, publish):
     """Register a module at the specified path using the given or default profile."""
 
     click.echo(f'Profile selected: {profile}')
@@ -46,9 +47,9 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
 
     original_version = facets_data.get('version', "1.0")
     original_sample_version = facets_data.get('sample', {}).get('version', "1.0")
-
+    is_local_develop = git_ref.startswith('local-')
     # Modify version if git_ref indicates local environment
-    if git_ref.startswith('local-'):
+    if is_local_develop:
         new_version = f'{original_version}-{git_ref}';
         facets_data['version'] = new_version
 
@@ -66,7 +67,7 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
     control_plane_url = credentials['control_plane_url']
     username = credentials['username']
     token = credentials['token']
-    
+
     intent = facets_data.get('intent', 'unknown')
     flavor = facets_data.get('flavor', 'unknown')
 
@@ -83,11 +84,11 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
     # Add the auto-create-intent flag if set
     if auto_create_intent:
         command.append("-a")
-    
+
     click.echo(f'Auto-create intent: {auto_create_intent}')
 
     # Add the publishable flag if set
-    if publishable:
+    if not publishable and not publish:
         command.append("-f")
 
     click.echo(f'Module marked as publishable: {publishable}')
@@ -96,29 +97,52 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
     if git_repo_url:
         command.extend(["-g", git_repo_url])
         click.echo(f'Git repository URL: {git_repo_url}')
-    
+
     # Add GIT_REF
     command.extend(["-r", git_ref])
     click.echo(f'Git reference: {git_ref}')
 
-    success_message = f'Module with Intent "{intent}", Flavor "{flavor}", and Version "{facets_data["version"]}" successfully published to {control_plane_url}'
+    success_message = f'[PREVIEW] Module with Intent "{intent}", Flavor "{flavor}", and Version "{facets_data["version"]}" successfully previewed to {control_plane_url}'
 
     # Execute the command
     try:
         subprocess.run(' '.join(command), shell=True, check=True)
         click.echo('✔ Module preview successfully registered.')
+        click.echo(f'\n\n✔✔✔ {success_message}\n')
     except subprocess.CalledProcessError as e:
-        click.echo(f'❌ Failed to register module for preview: {e}')
+        raise click.UsageError(f'❌ Failed to register module for preview: {e}')
     finally:
         # Revert version back to original after attempting registration
-        facets_data['version'] = original_version
-        facets_data['sample']['version'] = original_sample_version
-        with open(yaml_file, 'w') as file:
-            yaml.dump(facets_data, file)
-        click.echo(f'Version reverted to: {original_version}')
-        click.echo(f'Sample version reverted to: {original_sample_version}')
+        if is_local_develop:
+            facets_data['version'] = original_version
+            facets_data['sample']['version'] = original_sample_version
+            with open(yaml_file, 'w') as file:
+                yaml.dump(facets_data, file)
+            click.echo(f'Version reverted to: {original_version}')
+            click.echo(f'Sample version reverted to: {original_sample_version}')
 
-    click.echo(f'\n\n✔✔✔ {success_message}\n')
+    success_message_published = f'[PUBLISH] Module with Intent "{intent}", Flavor "{flavor}", and Version "{facets_data["version"]}" successfully published to {control_plane_url}'
+    publish_command = [
+        "curl", "-s", "https://facets-cloud.github.io/facets-schemas/scripts/module_publish.sh", "|", "bash", "-s",
+        "--",
+        "-c", control_plane_url,
+        "-u", username,
+        "-t", token,
+        "-i", intent,
+        "-f", flavor,
+        "-v", original_version
+    ]
+    try:
+        if is_local_develop:
+            raise click.UsageError(f'❌ Cannot publish a local development module, please provide GIT_REF and GIT_REPO_URL')
+        if publish:
+            subprocess.run(' '.join(publish_command), shell=True, check=True)
+            click.echo(f'\n\n✔✔✔ {success_message_published}\n')
+    except subprocess.CalledProcessError as e:
+        raise click.UsageError(f'❌ Failed to Publish module: {e}')
+
+
+
 
 
 if __name__ == "__main__":

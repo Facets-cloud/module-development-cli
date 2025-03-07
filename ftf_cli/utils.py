@@ -29,6 +29,18 @@ def validate_facets_yaml(path):
     return yaml_path
 
 
+def load_facets_yaml(path):
+    """Load and validate facets.yaml file, returning its content as an object."""
+    # Validate the facets.yaml file
+    yaml_path = validate_facets_yaml(path)
+
+    # Load YAML content
+    with open(yaml_path, 'r') as file:
+        content = yaml.safe_load(file)
+
+    return content
+
+
 def validate_variables_tf(path):
     """Ensure variables.tf exists and is valid HCL."""
     variables_tf_path = os.path.join(path, 'variables.tf')
