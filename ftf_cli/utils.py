@@ -138,7 +138,7 @@ yaml_schema = {
             "type": "array",
             "items": {"type": "string"}
         },
-        "spec": jsonschema.Draft7Validator.META_SCHEMA,
+        "spec": {},
         "outputs": {
             "type": "object",
             "patternProperties": {

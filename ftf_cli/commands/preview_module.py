@@ -133,9 +133,10 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
         "-v", original_version
     ]
     try:
-        if is_local_develop:
-            raise click.UsageError(f'❌ Cannot publish a local development module, please provide GIT_REF and GIT_REPO_URL')
         if publish:
+            if is_local_develop:
+                raise click.UsageError(
+                    f'❌ Cannot publish a local development module, please provide GIT_REF and GIT_REPO_URL')
             subprocess.run(' '.join(publish_command), shell=True, check=True)
             click.echo(f'\n\n✔✔✔ {success_message_published}\n')
     except subprocess.CalledProcessError as e:
