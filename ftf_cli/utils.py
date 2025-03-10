@@ -9,7 +9,7 @@ import hcl2
 import requests
 
 
-ALLOWED_TYPES = ['string', 'number', 'integer', 'boolean', 'array', 'object', 'enum']
+ALLOWED_TYPES = ['string', 'number', 'boolean', 'enum']
 
 
 def validate_facets_yaml(path):
@@ -57,14 +57,14 @@ def validate_variables_tf(path):
     return variables_tf_path
 
 
-def insert_nested_fields(existing_structure, keys, value):
-    """Recursively inserts nested fields within an object structure"""
+def insert_nested_fields(structure, keys, value):
+    """Recursively inserts nested fields into the given dictionary structure."""
     if len(keys) == 1:
-        existing_structure[keys[0]] = value
+        structure[keys[0]] = value
     else:
-        if keys[0] not in existing_structure or not isinstance(existing_structure[keys[0]], dict):
-            existing_structure[keys[0]] = {}
-        insert_nested_fields(existing_structure[keys[0]], keys[1:], value)
+        if keys[0] not in structure:
+            structure[keys[0]] = {}
+        insert_nested_fields(structure[keys[0]], keys[1:], value)
 
 
 def update_spec_variable(terraform_code, variable_name, spec_identifier, new_fields):
@@ -79,7 +79,7 @@ def update_spec_variable(terraform_code, variable_name, spec_identifier, new_fie
     for line in lines:
         stripped = line.strip()
 
-        if stripped.startswith(f"variable \"{variable_name}\" "):
+        if stripped.startswith(f'variable "{variable_name}" '):
             inside_variable = True
             variable_found = True
 
@@ -92,14 +92,15 @@ def update_spec_variable(terraform_code, variable_name, spec_identifier, new_fie
         if inside_spec:
             if stripped == "})":
                 inside_spec = False
+
                 # Insert the new fields before closing the spec block
                 for key, value in new_fields.items():
                     keys = key.split(".")
                     insert_nested_fields(existing_structure, keys, value)
 
-                def format_structure(structure, indent=6):
+                def format_structure(structure, indent=4):
                     formatted = []
-                    for key, value in structure.items():
+                    for key, value in sorted(structure.items()):
                         if isinstance(value, dict):
                             formatted.append(" " * indent + f"{key} = object({{")
                             formatted.extend(format_structure(value, indent + 2))
@@ -108,13 +109,9 @@ def update_spec_variable(terraform_code, variable_name, spec_identifier, new_fie
                             formatted.append(" " * indent + f"{key} = {value}")
                     return formatted
 
-                updated_lines.extend(format_structure(existing_structure))
-
-            else:
-                parts = stripped.split("=")
-                if len(parts) > 1:
-                    key = parts[0].strip()
-                    existing_structure[key] = {}
+                updated_lines.extend(format_structure(existing_structure, indent=6))
+                updated_lines.append(" " * 4 + "})")
+                continue
 
         updated_lines.append(line)
 
@@ -265,3 +262,28 @@ def is_logged_in(profile):
     except Exception as err:
         click.echo(f'An error occurred: {err}')
         return False
+
+
+if __name__ == "__main__":
+    sample_terraform_code = """
+variable "example_variable" {
+  type = object({
+    spec = object({
+      cpu    = number
+      memory = number
+    })
+  })
+}
+    """
+
+    test_cases = [
+        {"gpu": "number"},
+        {"disk.size": "number", "disk.type": "string"},
+        {"network.vpc": "string", "network.subnet": "string"},
+    ]
+
+    for i, new_fields in enumerate(test_cases, 1):
+        print(f"Test Case {i}:")
+        updated_code = update_spec_variable(sample_terraform_code, "example_variable", "spec =", new_fields)
+        print(updated_code)
+        print("\n" + "-" * 50 + "\n")
