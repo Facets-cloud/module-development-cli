@@ -78,7 +78,8 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
         "curl", "-s", "https://facets-cloud.github.io/facets-schemas/scripts/module_register.sh", "|", "bash", "-s", "--",
         "-c", control_plane_url,
         "-u", username,
-        "-t", token
+        "-t", token,
+        "-p", path
     ]
 
     # Add the auto-create-intent flag if set
@@ -130,7 +131,8 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
         "-t", token,
         "-i", intent,
         "-f", flavor,
-        "-v", original_version
+        "-v", original_version,
+        "-p", path
     ]
     try:
         if publish:
