@@ -142,8 +142,7 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
         "-t", token,
         "-i", intent,
         "-f", flavor,
-        "-v", original_version,
-        "-p", path
+        "-v", original_version
     ]
     try:
         if publish:
