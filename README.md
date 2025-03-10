@@ -84,7 +84,7 @@ After successful installation, you can use the `ftf` command to access CLI.
   Add a new variable to the module by specifying necessary details.
 
   ```bash
-  ftf add-variable
+  ftf add-variable /your/path/to/module 
   ```
   Prompts for Variable Name, Type, and Description, with the option to specify via CLI.
 
@@ -93,8 +93,6 @@ After successful installation, you can use the `ftf` command to access CLI.
   - `-t, --type`: (prompt/type) Variable Type, given base JSON schema type.
   - `-d, --description`: Provides a description for the variable.
   - `--options`: For enums, offer aggregate option hierarchy.
-  - `-p, --path`: Path to the module directory containing facets.yaml
-
 
 - **Validate Directory**
   Validate the Terraform configuration for formatting, initialization, and security violations using Checkov.

@@ -8,9 +8,9 @@ from ftf_cli.utils import validate_facets_yaml, validate_variables_tf, ALLOWED_T
 @click.option('-n', '--name', prompt='Variable Name (dot-separated for nested)', type=str,
               help='Name allowing nested dot-separated variants.')
 @click.option('-t', '--type', prompt='Variable Type', type=str, help='Given base JSON schema type.')
-@click.option('-d', '--description', type=str, help='Provides a description for the variable.')
-@click.option('--options', default='', help='For enums, offer aggregate option hierarchy.')
-@click.option('-p', '--path', default='.', help='Path to the module directory containing facets.yaml')
+@click.option('-d', '--description', prompt='Variable Description', type=str, help='Provides a description for the variable.')
+@click.option('--options', prompt='If type is enum add comma separated values', default='', help='For enums, offer aggregate option hierarchy.')
+@click.argument('path', type=click.Path(exists=True))
 def add_variable(name, type, description, options, path):
     """Add a new variable to the module."""
     # Validate the facets.yaml file in the given path
