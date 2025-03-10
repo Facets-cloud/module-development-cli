@@ -19,9 +19,11 @@ import yaml
               help='The Git repository URL, defaults to environment variable GIT_REPO_URL if set')
 @click.option('-r', '--git-ref', default=lambda: os.getenv('GIT_REF', f'local-{getpass.getuser()}'),
               help='The Git reference, defaults to environment variable GIT_REF if set, or local user name')
-@click.option('-p', '--publish', default=False, callback=validate_boolean,
+@click.option('--publish', default=False, callback=validate_boolean,
               help='Publish the module after preview if set.')
-def preview_module(path, profile, auto_create_intent, publishable, git_repo_url, git_ref, publish):
+@click.option('--skip-terraform-validation', default=False, callback=validate_boolean,
+              help='Skip Terraform validation steps if set to true.')
+def preview_module(path, profile, auto_create_intent, publishable, git_repo_url, git_ref, publish, skip_terraform_validation):
     """Register a module at the specified path using the given or default profile."""
 
     click.echo(f'Profile selected: {profile}')
@@ -37,6 +39,7 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
     ctx = click.Context(validate_directory)
     ctx.params['path'] = path
     ctx.params['check_only'] = False  # Set default for check_only
+    ctx.params['skip_terraform_validation'] = skip_terraform_validation
     try:
         validate_directory.invoke(ctx)
     except click.ClickException as e:
