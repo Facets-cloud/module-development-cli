@@ -263,6 +263,15 @@ def is_logged_in(profile):
         click.echo(f'An error occurred: {err}')
         return False
 
+def validate_boolean(ctx, param, value):
+    if isinstance(value, bool):
+        return value
+    if value.lower() in ('true', 'yes', '1'):
+        return True
+    elif value.lower() in ('false', 'no', '0'):
+        return False
+    else:
+        raise click.BadParameter("Boolean flag must be true or false.")
 
 if __name__ == "__main__":
     sample_terraform_code = """

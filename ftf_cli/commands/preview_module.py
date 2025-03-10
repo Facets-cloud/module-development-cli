@@ -1,19 +1,26 @@
 import os
 import click
-from ftf_cli.utils import is_logged_in
+from ftf_cli.utils import is_logged_in, validate_boolean
 from ftf_cli.commands.validate_directory import validate_directory
 import subprocess
 import getpass
 import yaml
 
+
 @click.command()
 @click.argument('path', type=click.Path(exists=True))
-@click.option('-p', '--profile', default=lambda: os.getenv('FACETS_PROFILE', 'default'), help='The profile name to use or defaults to environment variable FACETS_PROFILE if set')
-@click.option('-a', '--auto-create-intent', is_flag=True, default=False, help='Automatically create intent if not exists')
-@click.option('-f', '--publishable', is_flag=True, default=False, help='Mark the module as publishable for production. Default is for development and testing (use false).')
-@click.option('-g', '--git-repo-url', default=lambda: os.getenv('GIT_REPO_URL'), help='The Git repository URL, defaults to environment variable GIT_REPO_URL if set')
-@click.option('-r', '--git-ref', default=lambda: os.getenv('GIT_REF', f'local-{getpass.getuser()}'), help='The Git reference, defaults to environment variable GIT_REF if set, or local user name')
-@click.option('-f', '--publish', is_flag=True, default=False, help='Publish the module after preview if set.')
+@click.option('-p', '--profile', default=lambda: os.getenv('FACETS_PROFILE', 'default'),
+              help='The profile name to use or defaults to environment variable FACETS_PROFILE if set')
+@click.option('-a', '--auto-create-intent', default=False, callback=validate_boolean,
+              help='Automatically create intent if not exists')
+@click.option('-f', '--publishable', default=False, callback=validate_boolean,
+              help='Mark the module as publishable for production. Default is for development and testing (use false).')
+@click.option('-g', '--git-repo-url', default=lambda: os.getenv('GIT_REPO_URL'),
+              help='The Git repository URL, defaults to environment variable GIT_REPO_URL if set')
+@click.option('-r', '--git-ref', default=lambda: os.getenv('GIT_REF', f'local-{getpass.getuser()}'),
+              help='The Git reference, defaults to environment variable GIT_REF if set, or local user name')
+@click.option('-p', '--publish', default=False, callback=validate_boolean,
+              help='Publish the module after preview if set.')
 def preview_module(path, profile, auto_create_intent, publishable, git_repo_url, git_ref, publish):
     """Register a module at the specified path using the given or default profile."""
 
@@ -75,7 +82,8 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
     click.echo('Preparing registration command...')
 
     command = [
-        "curl", "-s", "https://facets-cloud.github.io/facets-schemas/scripts/module_register.sh", "|", "bash", "-s", "--",
+        "curl", "-s", "https://facets-cloud.github.io/facets-schemas/scripts/module_register.sh", "|", "bash", "-s",
+        "--",
         "-c", control_plane_url,
         "-u", username,
         "-t", token,
@@ -143,9 +151,6 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
             click.echo(f'\n\n✔✔✔ {success_message_published}\n')
     except subprocess.CalledProcessError as e:
         raise click.UsageError(f'❌ Failed to Publish module: {e}')
-
-
-
 
 
 if __name__ == "__main__":
