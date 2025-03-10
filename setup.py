@@ -11,7 +11,8 @@ setup(
         'PyYAML',
         'checkov',
         'jsonschema',
-        'requests'
+        'requests',
+        'python-hcl2'
     ],
     entry_points='''
         [console_scripts]

@@ -5,6 +5,7 @@ import yaml
 import jsonschema
 from jsonschema import validate, Draft7Validator
 import click
+import hcl2
 import requests
 
 
