@@ -11,6 +11,12 @@ from checkov.terraform.runner import Runner
 @click.option('--check-only', is_flag=True, help='Check if Terraform files are correctly formatted without modifying them.')
 def validate_directory(path, check_only):
     """Validate the Terraform module and its security aspects."""
+
+    # Check if Terraform is installed
+    if run("terraform version", shell=True, capture_output=True).returncode != 0:
+        click.echo('❌ Terraform is not installed. Please install Terraform to continue.')
+        return
+
     try:
         # Validate the facets.yaml file in the given path
         validate_facets_yaml(path)
