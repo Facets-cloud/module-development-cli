@@ -119,7 +119,9 @@ ftf validate-directory /path/to/module [OPTIONS]
 **Notes**:
 - Ensures Terraform files are valid and formatted, preventing deployment errors.
 - Automatically runs Checkov for security checks, enhancing module safety.
+#### Login
 
+Authenticate and store credentials for a control plane using a named profile.
 
 ```bash
 ftf login [OPTIONS]
@@ -137,7 +139,6 @@ Prompts for Control Plane URL, Username, Token, and Profile. This information is
 - Validates the Control Plane URL format.
 - Checks credentials against the control plane before storing.
 - Useful for managing multiple environments with different profiles.
-
 #### Preview Module
 
 Register or preview a module at the specified path.
@@ -158,10 +159,7 @@ You can even set env vars GIT_REPO_URL, GIT_REF, FACETS_PROFILE. Particularly us
 
 **Notes**:
 - If GIT_REPO_URL, GIT_REF are not set or provided it will preview the module as a non-publishable module with a changed version
-
-#### Login
-
-Authenticate and store credentials for a control plane using a named profile.
+- The version will be changed to a local testing version such as 1.0-username
 
 
 ## Contribution
