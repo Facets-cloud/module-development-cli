@@ -50,10 +50,6 @@ To install FTF CLI locally, follow these steps:
    Ensure `pip` is upgraded and install the required packages:
 
    ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
-
-   # Or install directly via setup
    pip install .
    ```
 
