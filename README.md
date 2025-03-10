@@ -120,6 +120,24 @@ ftf validate-directory /path/to/module [OPTIONS]
 - Ensures Terraform files are valid and formatted, preventing deployment errors.
 - Automatically runs Checkov for security checks, enhancing module safety.
 
+
+```bash
+ftf login [OPTIONS]
+```
+
+Prompts for Control Plane URL, Username, Token, and Profile. This information is stored under a specified profile for future interactions.
+
+**Options**:
+- `-c, --control-plane-url`: (prompt) The URL of the control plane. Must start with `http://` or `https://`.
+- `-u, --username`: (prompt) Your username.
+- `-t, --token`: (prompt) Your access token, input is hidden.
+- `-p, --profile`: (prompt) The profile name to use for storing credentials, defaults to `default`.
+
+**Notes**:
+- Validates the Control Plane URL format.
+- Checks credentials against the control plane before storing.
+- Useful for managing multiple environments with different profiles.
+
 #### Preview Module
 
 Register or preview a module at the specified path.
@@ -145,22 +163,6 @@ You can even set env vars GIT_REPO_URL, GIT_REF, FACETS_PROFILE. Particularly us
 
 Authenticate and store credentials for a control plane using a named profile.
 
-```bash
-ftf login [OPTIONS]
-```
-
-Prompts for Control Plane URL, Username, Token, and Profile. This information is stored under a specified profile for future interactions.
-
-**Options**:
-- `-c, --control-plane-url`: (prompt) The URL of the control plane. Must start with `http://` or `https://`.
-- `-u, --username`: (prompt) Your username.
-- `-t, --token`: (prompt) Your access token, input is hidden.
-- `-p, --profile`: (prompt) The profile name to use for storing credentials, defaults to `default`.
-
-**Notes**:
-- Validates the Control Plane URL format.
-- Checks credentials against the control plane before storing.
-- Useful for managing multiple environments with different profiles.
 
 ## Contribution
 
