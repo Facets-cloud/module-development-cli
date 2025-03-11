@@ -154,9 +154,7 @@ yaml_schema = {
                                         "version": {"type": "string"},
                                         "attributes": {
                                             "type": "object",
-                                            "patternProperties": {
-                                                ".*": {"type": "string"}
-                                            }
+                                            "additionalProperties": True
                                         }
                                     },
                                     "required": ["source", "version", "attributes"]
