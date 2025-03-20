@@ -26,6 +26,26 @@ import json
               help='Skip Terraform validation steps if set to true.')
 def preview_module(path, profile, auto_create_intent, publishable, git_repo_url, git_ref, publish, skip_terraform_validation):
     """Register a module at the specified path using the given or default profile."""
+    
+    def generate_and_write_output_tree(path):
+        """Generates the output tree and writes it to output-lookup-tree.json file."""
+                # Generate output tree       
+        output_file = os.path.join(path, 'output.tf')
+        
+        with open(output_file, "r") as file:
+            dict = hcl2.load(file)
+
+        locals = dict.get("locals")[0]
+        output_interfaces = locals.get("output_interfaces")[0]
+        output_attributes = locals.get("output_attributes")[0]
+        
+        output = {"out": {"attributes": output_attributes, "interfaces": output_interfaces}}
+        
+        transformed_output = generate_output_tree(output)
+        
+        # save the transformed output to output-lookup-tree.json
+        with open(os.path.join(path, 'output-lookup-tree.json'), 'w') as file:
+            json.dump(transformed_output, file, indent=4)
 
     click.echo(f'Profile selected: {profile}')
 
@@ -118,23 +138,8 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
     success_message = f'[PREVIEW] Module with Intent "{intent}", Flavor "{flavor}", and Version "{facets_data["version"]}" successfully previewed to {control_plane_url}'
 
     try:
-        # Generate output tree       
-        output_file = os.path.join(path, 'output.tf')
-        
-        with open(output_file, "r") as file:
-            dict = hcl2.load(file)
-
-        locals = dict.get("locals")[0]
-        output_interfaces = locals.get("output_interfaces")[0]
-        output_attributes = locals.get("output_attributes")[0]
-        
-        output = {"out": {"attributes": output_attributes, "interfaces": output_interfaces}}
-        
-        transformed_output = generate_output_tree(output)
-        
-        # save the transformed output to output-lookup-tree.json
-        with open(os.path.join(path, 'output-lookup-tree.json'), 'w') as file:
-            json.dump(transformed_output, file, indent=4)
+        # Generate the output tree
+        generate_and_write_output_tree(path)
         
         # Execute the command       
         subprocess.run(' '.join(command), shell=True, check=True)
