@@ -1,11 +1,12 @@
 import os
 import click
-from ftf_cli.utils import is_logged_in, validate_boolean
+from ftf_cli.utils import is_logged_in, validate_boolean, generate_output_tree
 from ftf_cli.commands.validate_directory import validate_directory
 import subprocess
 import getpass
 import yaml
-
+import hcl2
+import json
 
 @click.command()
 @click.argument('path', type=click.Path(exists=True))
@@ -116,8 +117,26 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
 
     success_message = f'[PREVIEW] Module with Intent "{intent}", Flavor "{flavor}", and Version "{facets_data["version"]}" successfully previewed to {control_plane_url}'
 
-    # Execute the command
     try:
+        # Generate output tree       
+        output_file = os.path.join(path, 'output.tf')
+        
+        with open(output_file, "r") as file:
+            dict = hcl2.load(file)
+
+        locals = dict.get("locals")[0]
+        output_interfaces = locals.get("output_interfaces")[0]
+        output_attributes = locals.get("output_attributes")[0]
+        
+        output = {"out": {"attributes": output_attributes, "interfaces": output_interfaces}}
+        
+        transformed_output = generate_output_tree(output)
+        
+        # save the transformed output to output-lookup-tree.json
+        with open(os.path.join(path, 'output-lookup-tree.json'), 'w') as file:
+            json.dump(transformed_output, file, indent=4)
+        
+        # Execute the command       
         subprocess.run(' '.join(command), shell=True, check=True)
         click.echo('✔ Module preview successfully registered.')
         click.echo(f'\n\n✔✔✔ {success_message}\n')
