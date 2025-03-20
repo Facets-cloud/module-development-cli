@@ -28,24 +28,33 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
     """Register a module at the specified path using the given or default profile."""
     
     def generate_and_write_output_tree(path):
-        """Generates the output tree and writes it to output-lookup-tree.json file."""
-                # Generate output tree       
         output_file = os.path.join(path, 'output.tf')
-        
-        with open(output_file, "r") as file:
-            dict = hcl2.load(file)
+    # Check if output.tf exists
+        if not os.path.exists(output_file):
+            print(f"Warning: {output_file} not found. Skipping output tree generation.")
+            return
 
-        locals = dict.get("locals")[0]
-        output_interfaces = locals.get("output_interfaces")[0]
-        output_attributes = locals.get("output_attributes")[0]
-        
-        output = {"out": {"attributes": output_attributes, "interfaces": output_interfaces}}
-        
-        transformed_output = generate_output_tree(output)
-        
-        # save the transformed output to output-lookup-tree.json
-        with open(os.path.join(path, 'output-lookup-tree.json'), 'w') as file:
-            json.dump(transformed_output, file, indent=4)
+        try:
+            with open(output_file, "r") as file:
+                dict = hcl2.load(file)
+
+            locals = dict.get("locals", [{}])[0]
+            output_interfaces = locals.get("output_interfaces", [{}])[0]
+            output_attributes = locals.get("output_attributes", [{}])[0]
+
+            output = {"out": {"attributes": output_attributes, "interfaces": output_interfaces}}
+
+            transformed_output = generate_output_tree(output)
+
+            # Save the transformed output to output-lookup-tree.json
+            output_json_path = os.path.join(path, 'output-lookup-tree.json')
+            with open(output_json_path, 'w') as file:
+                json.dump(transformed_output, file, indent=4)
+
+            print(f"Output lookup tree saved to {output_json_path}")
+
+        except Exception as e:
+            print(f"Error processing {output_file}: {e}")
 
     click.echo(f'Profile selected: {profile}')
 
