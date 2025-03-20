@@ -29,6 +29,27 @@ def validate_facets_yaml(path):
 
     return yaml_path
 
+def generate_output_tree(obj):
+    """ Generate a JSON schema from a output.tf file. """
+    if isinstance(obj, dict):
+        transformed = {}
+        for key, value in obj.items():
+            transformed[key] = generate_output_tree(value)
+        return transformed
+    elif isinstance(obj, list):
+        if len(obj) > 0:
+            return {"type": "array", "items": generate_output_tree(obj[0])}
+        else:
+            return {"type": "array"}  # No "items" if unknown
+    elif isinstance(obj, bool):
+        return {"type": "boolean"}
+    elif isinstance(obj, (int, float)):
+        return {"type": "number"}
+    elif isinstance(obj, str):
+        return {"type": "string"}
+    else:
+        return {"type": "any"}  # Catch unexpected types
+
 
 def load_facets_yaml(path):
     """Load and validate facets.yaml file, returning its content as an object."""
