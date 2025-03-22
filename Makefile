@@ -4,17 +4,20 @@ ifeq ($(PYTHON),)
   $(error "Python is not installed. Please install Python 3.")
 endif
 
-.PHONY: init install test
+.PHONY: setup install test
 
-init:
+setup:
 	$(PYTHON) -m venv env
 	source "./env/bin/activate"
 	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 	source "$(HOME)/.cargo/env"
+	$(PYTHON) -m pip install -r requirements.txt
 
-install: init
+install: setup
 	pip install .
 
-test: init
+test: setup
 	pip install pytest
 	pytest tests
+
+all: setup test install
