@@ -158,6 +158,25 @@ You can even set env vars GIT_REPO_URL, GIT_REF, FACETS_PROFILE. Particularly us
 - The version will be changed to a local testing version such as 1.0-username
 
 
+#### Expose Provider
+
+Expose a new provider in the module output by specifying necessary details.
+
+```bash
+ftf expose-provider [OPTIONS] /path/to/module
+```
+
+Prompts for Provider Name, Source, Version and Attributes.
+
+**Options**:
+- `-n, --name`: (prompt) Provider Name.
+- `-s, --source`: (prompt) Provider Source.
+- `-v, --version`: (prompt) Provider Version.
+- `-a, --attributes`: (prompt) Provider Attributes (comma-separated), allows nested dot-separated variants.
+
+**Notes**:
+- Supports nested attributes using dot notation in attribute name.
+
 ## Contribution
 
 Feel free to fork the repository and submit pull requests for any feature enhancements or bug fixes.

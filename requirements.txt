@@ -3,3 +3,6 @@ PyYAML
 python-hcl2
 jsonschema
 requests
+checkov
+questionary
+pytest-mock
