@@ -51,6 +51,47 @@ def generate_output_tree(obj):
         return {"type": "any"}  # Catch unexpected types
 
 
+def transform_output_tree(tree, level=1):
+    """ Recursively transform the output tree into a Terraform-compatible schema with proper indentation."""
+    INDENT = "  "  # Fixed indentation (2 spaces)
+    current_indent = INDENT * level
+    next_indent = INDENT * (level + 1)
+
+    if isinstance(tree, dict):
+        if "type" in tree:
+            # If the node has a "type", return it directly
+            if tree["type"] == "array":
+                # Handle arrays with "items"
+                if "items" in tree:
+                    return f"list({transform_output_tree(tree['items'], level)})"
+                else:
+                    return "list(any)"
+            elif tree["type"] == "object":
+                # Handle objects
+                return "object({})"
+            elif tree["type"] == "boolean":
+                # Fix boolean type to bool
+                return "bool"
+            else:
+                return tree["type"]
+        else:
+            # Recursively process nested dictionaries
+            transformed_items = []
+            for key, value in tree.items():
+                transformed_value = transform_output_tree(value, level + 1)
+                transformed_items.append(f"{next_indent}{key} = {transformed_value}")
+            return f"object({{\n{',\n'.join(transformed_items)}\n{current_indent}}})"
+    elif isinstance(tree, list):
+        # Handle arrays
+        if len(tree) > 0:
+            return f"list({transform_output_tree(tree[0], level)})"
+        else:
+            return "list(any)"  # Unknown items
+    else:
+        # Fallback for unexpected types
+        return "any"
+
+
 def load_facets_yaml(path):
     """Load and validate facets.yaml file, returning its content as an object."""
     # Validate the facets.yaml file

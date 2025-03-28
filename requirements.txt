@@ -1,6 +1,7 @@
 click
 PyYAML
-python-hcl2
+Jinja2
+git+https://github.com/Facets-cloud/python-hcl2.git
 jsonschema
 requests
 checkov

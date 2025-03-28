@@ -12,8 +12,8 @@ setup(
         'checkov',
         'jsonschema',
         'requests',
-        'python-hcl2',
-        'questionary'
+        'questionary',
+        'python-hcl2 @ git+https://github.com/Facets-cloud/python-hcl2.git@main',
     ],
     entry_points='''
         [console_scripts]
