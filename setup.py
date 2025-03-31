@@ -12,7 +12,8 @@ setup(
         'checkov',
         'jsonschema',
         'requests',
-        'python-hcl2'
+        'python-hcl2',
+        'questionary'
     ],
     entry_points='''
         [console_scripts]
