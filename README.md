@@ -215,6 +215,19 @@ Prompts for Module Intent, Flavor, Version and Profile.
 - `-s, --stage`: (prompt) Stage of the terraform module to delete.
 - `-p, --profile`: (prompt) Profile name to use, defaults to `default`.
 
+#### Get Outputs
+
+Get registered outputs from control plane.
+
+```bash
+ftf get-outputs [OPTIONS]
+```
+
+Prompts for Profile.
+
+**Options**:
+- `-p, --profile`: (prompt) Profile name to use, defaults to `default`.
+
 ## Contribution
 
 Feel free to fork the repository and submit pull requests for any feature enhancements or bug fixes.

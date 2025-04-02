@@ -6,6 +6,7 @@ from .expose_provider import expose_provider
 from .delete_module import delete_module
 from .login import login
 from .preview_module import preview_module
+from .get_outputs import get_outputs
 
 # Newly added command import
 
@@ -15,6 +16,7 @@ __all__ = [
     "delete_module",
     "expose_provider",
     "generate_module",
+    "get_outputs",
     "login",
     "preview_module",
     "validate_directory",
