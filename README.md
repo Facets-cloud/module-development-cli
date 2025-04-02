@@ -196,6 +196,24 @@ Prompts for Profile Name, Input Name Display Name, Description and Output Type.
 - `-d, --description`: (prompt) Description of the input variable to be added as part of input variable in facets.yaml.
 - `-o, --output-type`: (prompt) The type of registered output type to be added as input for terraform module.
 
+
+#### Delete Module
+
+Delete a registered terraform module from control plane.
+
+```bash
+ftf delete-module [OPTIONS]
+```
+
+Prompts for Module Intent, Flavor, Version and Profile.
+
+**Options**:
+- `-i, --intent`: (prompt) Intent of the terraform module to delete.
+- `-f, --flavor`: (prompt) Flavor of the terraform module to delete.
+- `-v, --version`: (prompt) Version of the terraform module to delete.
+- `-s, --stage`: (prompt) Stage of the terraform module to delete.
+- `-p, --profile`: (prompt) Profile name to use, defaults to `default`.
+
 ## Contribution
 
 Feel free to fork the repository and submit pull requests for any feature enhancements or bug fixes.
