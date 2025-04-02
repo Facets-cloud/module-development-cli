@@ -64,7 +64,7 @@ After successful installation, you can use the `ftf` command to access CLI.
 Generate a new module with specified parameters.
 
 ```bash
-ftf generate-module [OPTIONS]
+ftf generate-module [OPTIONS] /path/to/module
 ```
 
 Prompts for details such as Intent, Flavor, Cloud, Title, and Description.
@@ -79,6 +79,7 @@ Prompts for details such as Intent, Flavor, Cloud, Title, and Description.
 **Notes**:
 - User inputs define basic module structure, auto-created based on templates.
 - Ensure correct cloud provider information for accurate configurations.
+- Default path where module is generated is current directory where the cli is run.
 
 #### Add Variable
 
