@@ -7,6 +7,7 @@ from ftf_cli.commands.preview_module import preview_module
 from ftf_cli.commands.expose_provider import expose_provider
 from ftf_cli.commands.add_input import add_input
 from ftf_cli.commands.delete_module import delete_module
+from ftf_cli.commands.get_outputs import get_outputs
 
 
 @click.group()
@@ -20,6 +21,7 @@ cli.add_command(add_variable)
 cli.add_command(delete_module)
 cli.add_command(expose_provider)
 cli.add_command(generate_module)
+cli.add_command(get_outputs)
 cli.add_command(login)
 cli.add_command(preview_module)
 cli.add_command(validate_directory)
