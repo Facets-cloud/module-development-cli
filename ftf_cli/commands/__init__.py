@@ -7,6 +7,7 @@ from .delete_module import delete_module
 from .login import login
 from .preview_module import preview_module
 from .get_outputs import get_outputs
+from .get_output_details import get_output_lookup_tree
 
 # Newly added command import
 
@@ -17,6 +18,7 @@ __all__ = [
     "expose_provider",
     "generate_module",
     "get_outputs",
+    "get_output_lookup_tree",
     "login",
     "preview_module",
     "validate_directory",
