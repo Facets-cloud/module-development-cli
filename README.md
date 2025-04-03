@@ -136,7 +136,27 @@ Prompts for Control Plane URL, Username, Token, and Profile. This information is
 - Validates the Control Plane URL format.
 - Checks credentials against the control plane before storing.
 - Useful for managing multiple environments with different profiles.
-#### Preview Module
+  
+
+#### Add Input
+
+Add an predefined output as input for terraform module by specifying necessary details.
+
+```bash
+ftf add-input [OPTIONS] /path/to/module
+```
+
+Prompts for Profile Name, Input Name Display Name, Description and Output Type.
+
+**Options**:
+- `-p, --profile`: (prompt) Profile name to use, defaults to `default`.
+- `-n, --name`: (prompt) Name of the input to be added as part of required inputs in facets.yaml and variables.tf.
+- `-dn, --display-name`: (prompt) Display name of the input to be added as part of input variable in facets.yaml.
+- `-d, --description`: (prompt) Description of the input variable to be added as part of input variable in facets.yaml.
+- `-o, --output-type`: (prompt) The type of registered output type to be added as input for terraform module.
+
+
+#### Preview (and Publish) Module
 
 Register or preview a module at the specified path.
 
@@ -180,23 +200,6 @@ Prompts for Provider Name, Source, Version, Attributes and Output.
 - Supports nested attributes using dot notation in attribute name.
 - By default, a default output will be created if none is present of type intent provided in facets.yaml with name "default".
 
-#### Add Input
-
-Add an predefined output as input for terraform module by specifying necessary details.
-
-```bash
-ftf add-input [OPTIONS] /path/to/module
-```
-
-Prompts for Profile Name, Input Name Display Name, Description and Output Type.
-
-**Options**:
-- `-p, --profile`: (prompt) Profile name to use, defaults to `default`.
-- `-n, --name`: (prompt) Name of the input to be added as part of required inputs in facets.yaml and variables.tf.
-- `-dn, --display-name`: (prompt) Display name of the input to be added as part of input variable in facets.yaml.
-- `-d, --description`: (prompt) Description of the input variable to be added as part of input variable in facets.yaml.
-- `-o, --output-type`: (prompt) The type of registered output type to be added as input for terraform module.
-
 
 #### Delete Module
 
@@ -222,4 +225,4 @@ Feel free to fork the repository and submit pull requests for any feature enhanc
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.md file for more details.
-# env0-test
+
