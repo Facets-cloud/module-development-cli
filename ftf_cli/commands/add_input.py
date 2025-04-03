@@ -184,7 +184,10 @@ def generate_inputs_variable(output_trees):
 variable "inputs" {{
   description = "A map of inputs requested by the module developer."
   type        = object({{
-    {', '.join([f'{tree_name} = object({{ {', '.join([f'{key} = {value}' for key, value in attributes.items()])}}})' for tree_name, attributes in generated_inputs.items()])}
+    {', '.join([
+        f'{tree_name} = object({{ {", ".join([f"{key} = {value}" for key, value in attributes.items()])} }})'
+        for tree_name, attributes in generated_inputs.items()
+    ])}
   }})
 }}
 """
