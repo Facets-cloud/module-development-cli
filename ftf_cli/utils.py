@@ -80,7 +80,15 @@ def transform_output_tree(tree, level=1):
             for key, value in tree.items():
                 transformed_value = transform_output_tree(value, level + 1)
                 transformed_items.append(f"{next_indent}{key} = {transformed_value}")
-            return f"object({{\n{',\n'.join(transformed_items)}\n{current_indent}}})"
+            
+            # Step 1: Join the transformed items with a comma and newline
+            joined_items = ',\n'.join(transformed_items)
+
+            # Step 2: Construct the object block with proper indentation
+            object_block = f"object({{\n{joined_items}\n{current_indent}}})"
+
+            # Step 3: Return the constructed object block
+            return object_block
     elif isinstance(tree, list):
         # Handle arrays
         if len(tree) > 0:
