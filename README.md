@@ -231,6 +231,20 @@ Prompts for Profile.
 **Options**:
 - `-p, --profile`: (prompt) Profile name to use, defaults to `default`.
 
+#### Get Output Lookup Tree
+
+Get lookup tree of registered output from control plane.
+
+```bash
+ftf get-output-lookup-tree [OPTIONS]
+```
+
+Prompts for Output Name and Profile.
+
+**Options**:
+- `-o, --output`: (prompt) Name of the output to get details for. 
+- `-p, --profile`: (prompt) Profile name to use, defaults to `default`.
+
 ## Contribution
 
 Feel free to fork the repository and submit pull requests for any feature enhancements or bug fixes.

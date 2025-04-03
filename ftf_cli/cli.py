@@ -8,6 +8,7 @@ from ftf_cli.commands.expose_provider import expose_provider
 from ftf_cli.commands.add_input import add_input
 from ftf_cli.commands.delete_module import delete_module
 from ftf_cli.commands.get_outputs import get_outputs
+from ftf_cli.commands.get_output_details import get_output_lookup_tree
 
 
 @click.group()
@@ -22,6 +23,7 @@ cli.add_command(delete_module)
 cli.add_command(expose_provider)
 cli.add_command(generate_module)
 cli.add_command(get_outputs)
+cli.add_command(get_output_lookup_tree)
 cli.add_command(login)
 cli.add_command(preview_module)
 cli.add_command(validate_directory)
