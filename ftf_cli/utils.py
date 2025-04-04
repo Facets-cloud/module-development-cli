@@ -213,7 +213,7 @@ yaml_schema = {
                 ".*": {
                     "type": "object",
                     "properties": {
-                        "type": {"type": "string", "pattern": "^@outputs/.+"},
+                        "type": {"type": "string", "pattern": "^@outputs?/.+"},
                         "providers": {
                             "type": "object",
                             "patternProperties": {
@@ -242,7 +242,7 @@ yaml_schema = {
                 ".*": {
                     "type": "object",
                     "properties": {
-                        "type": {"type": "string", "pattern": "^@outputs/.+"},
+                        "type": {"type": "string", "pattern": "^@outputs?/.+"},
                         "providers": {
                             "type": "array",
                             "items": {"type": "string"}
