@@ -57,7 +57,7 @@ def get_output_lookup_tree(profile, output):
             else:
                 lookup_tree = json.loads(required_output_type["lookupTree"])
             click.echo(
-                f"Output type lookup tree for {output}:\n{json.dumps(lookup_tree, indent=2)}"
+                f"Output type lookup tree for {output}:\n{json.dumps(lookup_tree, indent=2, sort_keys=True)}"
             )
 
         else:
