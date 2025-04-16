@@ -37,8 +37,13 @@ def get_outputs(profile):
             registered_outputs = []
             for output in response.json():
                 registered_outputs.append(output["name"])
-            formatted_output = "\n  - ".join(sorted(registered_outputs))
-            click.echo(f"Registered outputs: \n  - {formatted_output}")
+            registered_outputs.sort()
+            if len(registered_outputs) == 0:
+                click.echo("No outputs registered.")
+                return
+            click.echo("Registered outputs:")
+            for output in registered_outputs:
+                click.echo(f"- {output}")
         else:
             click.echo(
                 f"❌ Failed to fetch outputs. Status code: {response.status_code}"
