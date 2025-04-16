@@ -109,6 +109,8 @@ ftf add-variable [OPTIONS] /path/to/module
 - `-t, --type`: (prompt) Variable type, supports basic JSON schema types like string, number, boolean, enum.
 - `-d, --description`: (prompt) A descriptive text explaining the variable.
 - `--options`: (prompt) Comma-separated options used if the variable type is enum.
+- `--required`: Optional flag to mark variable as required.
+- `--default`: Optional flag to provide default value for variable.
 
 **Notes**:
 - Preserves terraform formatting while adding variables.

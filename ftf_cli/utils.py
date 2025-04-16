@@ -414,3 +414,14 @@ variable "example_variable" {
         updated_code = update_spec_variable(sample_terraform_code, "example_variable", "spec =", new_fields)
         print(updated_code)
         print("\n" + "-" * 50 + "\n")
+
+def validate_number(value):
+    """Validate that the given value is a number and return it as an integer or float."""
+    try:
+        # Check if the value is an integer
+        if '.' not in value:
+            return int(value)
+        # Otherwise, treat it as a float
+        return float(value)
+    except ValueError:
+        raise click.UsageError(f"❌ Default value '{value}' must be a valid number (integer or float).")
