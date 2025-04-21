@@ -8,7 +8,11 @@ import os
 import hcl
 import requests
 import yaml
-from ftf_cli.utils import is_logged_in, transform_output_tree
+from ftf_cli.utils import (
+    is_logged_in,
+    transform_output_tree,
+    ensure_formatting_for_object,
+)
 from lark import Token, Tree
 
 
@@ -249,28 +253,3 @@ def replace_inputs_variable(file_path, new_inputs_block):
         new_content = hcl.writes(body_node)
         file.write(new_content)
         file.close()
-
-
-def ensure_formatting_for_object(file_path):
-    """Ensure there is a newline after 'object({' in the Terraform file."""
-    with open(file_path, "r") as file:
-        lines = file.readlines()
-
-    updated_lines = []
-    for line in lines:
-        if "object({" in line or ")}" in line:
-            # Add a newline after 'object({'
-            line = line.replace("object({", "object({\n", -1)
-            line = line.replace("})", "})\n", -1)
-            line = line.replace("})\n,", "}),\n", -1)
-            # make sure only one newline is added in the end
-            line = line.rstrip() + "\n"
-            updated_lines.append(line)
-        else:
-            updated_lines.append(line)
-
-    with open(file_path, "w") as file:
-        file.writelines(updated_lines)
-
-    with open(os.devnull, "w") as devnull:
-        run(["terraform", "fmt", file_path], stdout=devnull, stderr=devnull)
