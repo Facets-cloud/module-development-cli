@@ -8,6 +8,7 @@ import yaml
 import hcl2
 import json
 
+
 @click.command()
 @click.argument('path', type=click.Path(exists=True))
 @click.option('-p', '--profile', default=lambda: os.getenv('FACETS_PROFILE', 'default'),
@@ -24,15 +25,18 @@ import json
               help='Publish the module after preview if set.')
 @click.option('--skip-terraform-validation', default=False, callback=validate_boolean,
               help='Skip Terraform validation steps if set to true.')
-def preview_module(path, profile, auto_create_intent, publishable, git_repo_url, git_ref, publish, skip_terraform_validation):
+def preview_module(path, profile, auto_create_intent, publishable, git_repo_url, git_ref, publish,
+                   skip_terraform_validation):
     """Register a module at the specified path using the given or default profile."""
-    
+
     def generate_and_write_output_tree(path):
         output_file = os.path.join(path, 'output.tf')
-    # Check if output.tf exists
+        output_json_path = os.path.join(path, 'output-lookup-tree.json')
+
+        # Check if output.tf exists
         if not os.path.exists(output_file):
             click.echo(f"Warning: {output_file} not found. Skipping output tree generation.")
-            return
+            return None
 
         try:
             with open(output_file, "r") as file:
@@ -47,14 +51,15 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
             transformed_output = generate_output_tree(output)
 
             # Save the transformed output to output-lookup-tree.json
-            output_json_path = os.path.join(path, 'output-lookup-tree.json')
             with open(output_json_path, 'w') as file:
                 json.dump(transformed_output, file, indent=4)
 
             click.echo(f"Output lookup tree saved to {output_json_path}")
+            return output_json_path
 
         except Exception as e:
             click.echo(f"Error processing {output_file}: {e}")
+            return None
 
     click.echo(f'Profile selected: {profile}')
 
@@ -146,11 +151,12 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
 
     success_message = f'[PREVIEW] Module with Intent "{intent}", Flavor "{flavor}", and Version "{facets_data["version"]}" successfully previewed to {control_plane_url}'
 
+    output_json_path = None
     try:
-        # Generate the output tree
-        generate_and_write_output_tree(path)
-        
-        # Execute the command       
+        # Generate the output tree and get the path to the generated file
+        output_json_path = generate_and_write_output_tree(path)
+
+        # Execute the command
         process = subprocess.run(' '.join(command), shell=True, capture_output=True, text=True, check=True)
         # Echo each line of the output using click.echo
         for line in process.stdout.splitlines():
@@ -175,6 +181,14 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
                 yaml.dump(facets_data, file)
             click.echo(f'Version reverted to: {original_version}')
             click.echo(f'Sample version reverted to: {original_sample_version}')
+
+        # Remove the output-lookup-tree.json file if it exists
+        if output_json_path and os.path.exists(output_json_path):
+            try:
+                os.remove(output_json_path)
+                click.echo(f"Removed temporary file: {output_json_path}")
+            except Exception as e:
+                click.echo(f"Warning: Failed to remove temporary file {output_json_path}: {e}")
 
     success_message_published = f'[PUBLISH] Module with Intent "{intent}", Flavor "{flavor}", and Version "{facets_data["version"]}" successfully published to {control_plane_url}'
     publish_command = [
