@@ -7,6 +7,7 @@ import getpass
 import yaml
 import hcl2
 import json
+import sys
 
 @click.command()
 @click.argument('path', type=click.Path(exists=True))
@@ -165,6 +166,7 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
         if e.stderr:
             for line in e.stderr.splitlines():
                 click.echo(line)
+        sys.stdout.flush()
         raise click.UsageError(f'❌ Failed to register module for preview: {e}')
     finally:
         # Revert version back to original after attempting registration
@@ -175,6 +177,7 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
                 yaml.dump(facets_data, file)
             click.echo(f'Version reverted to: {original_version}')
             click.echo(f'Sample version reverted to: {original_sample_version}')
+            sys.stdout.flush()
 
     success_message_published = f'[PUBLISH] Module with Intent "{intent}", Flavor "{flavor}", and Version "{facets_data["version"]}" successfully published to {control_plane_url}'
     publish_command = [
