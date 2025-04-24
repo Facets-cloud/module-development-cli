@@ -16,7 +16,7 @@ def validate_facets_yaml(path):
     """Validate the existence and format of the facets.yaml file."""
     yaml_path = os.path.join(path, 'facets.yaml')
     if not os.path.isfile(yaml_path):
-        raise click.UsageError(f'❌ facets.yaml file does not exist at {os.path.abspath(yaml_path)}')
+        raise click.UsageError(f' facets.yaml file does not exist at {os.path.abspath(yaml_path)}')
 
     try:
         with open(yaml_path, 'r') as f:
@@ -24,7 +24,7 @@ def validate_facets_yaml(path):
             validate_yaml(data)
 
     except yaml.YAMLError as exc:
-        raise click.UsageError(f'❌ facets.yaml is not a valid YAML file: {exc}')
+        raise click.UsageError(f' facets.yaml is not a valid YAML file: {exc}')
 
 
     return yaml_path
@@ -116,13 +116,13 @@ def validate_variables_tf(path):
     """Ensure variables.tf exists and is valid HCL."""
     variables_tf_path = os.path.join(path, 'variables.tf')
     if not os.path.isfile(variables_tf_path):
-        raise click.UsageError(f'❌ variables.tf file does not exist at {os.path.abspath(variables_tf_path)}')
+        raise click.UsageError(f' variables.tf file does not exist at {os.path.abspath(variables_tf_path)}')
 
     try:
         with open(variables_tf_path, 'r') as f:
             hcl2.load(f)
     except Exception as e:
-        raise click.UsageError(f'❌ variables.tf is not a valid HCL file: {e}')
+        raise click.UsageError(f' variables.tf is not a valid HCL file: {e}')
 
     return variables_tf_path
 
@@ -186,10 +186,10 @@ def update_spec_variable(terraform_code, variable_name, spec_identifier, new_fie
         updated_lines.append(line)
 
     if not variable_found:
-        raise click.UsageError(f"❌ Variable '{variable_name}' not found in the Terraform file.")
+        raise click.UsageError(f" Variable '{variable_name}' not found in the Terraform file.")
 
     if not spec_found:
-        raise click.UsageError(f"❌ Spec block '{spec_identifier}' not found in the variable '{variable_name}'.")
+        raise click.UsageError(f" Spec block '{spec_identifier}' not found in the variable '{variable_name}'.")
 
     return "\n".join(updated_lines)
 
@@ -206,7 +206,7 @@ yaml_schema = {
             "type": "array",
             "items": {"type": "string"}
         },
-        "spec": {},
+        "spec": jsonschema.Draft7Validator.META_SCHEMA,
         "outputs": {
             "type": "object",
             "patternProperties": {
@@ -274,12 +274,45 @@ yaml_schema = {
 }
 
 
+def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
+    """
+    Recursively check that no field in spec is of type 'array'.
+    Also check that any direct patternProperties have object type only, not primitive types like string.
+    Nested properties inside patternProperties can be any allowed types.
+    Raises a UsageError with instruction if found.
+    Assumes input is always valid JSON schema (no direct list values at property keys).
+    """
+    if not isinstance(spec_obj, dict):
+        return
+
+    for key, value in spec_obj.items():
+        if isinstance(value, dict):
+            field_type = value.get("type")
+            if field_type == "array":
+                raise click.UsageError(
+                    f'Invalid array type found at {path}.{key}. '
+                    f'Arrays are not allowed in spec. Use patternProperties for array-like structures instead.'
+                )
+            if "patternProperties" in value:
+                pp = value["patternProperties"]
+                for pattern_key, pp_val in pp.items():
+                    if not isinstance(pp_val, dict):
+                        raise click.UsageError(
+                            f'patternProperties at {path}.{key} with pattern "{pattern_key}" must be an object.'
+                        )
+            check_no_array_or_invalid_pattern_in_spec(value, path=f"{path}.{key}")
+
+
 def validate_yaml(data):
     try:
         validate(instance=data, schema=yaml_schema)
+        # Additional check for arrays and invalid patternProperties in spec
+        spec_obj = data.get("spec")
+        if spec_obj:
+            check_no_array_or_invalid_pattern_in_spec(spec_obj)
     except jsonschema.exceptions.ValidationError as e:
         print(e)
-        raise click.UsageError(f'❌ facets.yaml is not following Facets Schema: {e.message}')
+        raise click.UsageError(f' facets.yaml is not following Facets Schema: {e.message}')
     print("Facets YAML validation successful!")
     return True
 
