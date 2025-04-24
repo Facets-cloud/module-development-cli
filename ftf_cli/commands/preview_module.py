@@ -159,7 +159,7 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
         click.echo('✔ Module preview successfully registered.')
         click.echo(f'\n\n✔✔✔ {success_message}\n')
     except subprocess.CalledProcessError as e:
-        raise click.UsageError(f'❌ Failed to register module for preview: {e}, {e.stdout}, {e.stderr}')
+        raise click.UsageError(f'❌ lalalalala Failed to register module for preview: {e}, {e.stdout}, {e.stderr}')
     finally:
         # Revert version back to original after attempting registration
         if is_local_develop:
