@@ -31,7 +31,7 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
         output_file = os.path.join(path, 'output.tf')
     # Check if output.tf exists
         if not os.path.exists(output_file):
-            print(f"Warning: {output_file} not found. Skipping output tree generation.")
+            click.echo(f"Warning: {output_file} not found. Skipping output tree generation.")
             return
 
         try:
@@ -51,10 +51,10 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
             with open(output_json_path, 'w') as file:
                 json.dump(transformed_output, file, indent=4)
 
-            print(f"Output lookup tree saved to {output_json_path}")
+            click.echo(f"Output lookup tree saved to {output_json_path}")
 
         except Exception as e:
-            print(f"Error processing {output_file}: {e}")
+            click.echo(f"Error processing {output_file}: {e}")
 
     click.echo(f'Profile selected: {profile}')
 
@@ -151,10 +151,20 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
         generate_and_write_output_tree(path)
         
         # Execute the command       
-        subprocess.run(' '.join(command), shell=True, check=True)
+        process = subprocess.run(' '.join(command), shell=True, capture_output=True, text=True, check=True)
+        # Echo each line of the output using click.echo
+        for line in process.stdout.splitlines():
+            click.echo(line)
         click.echo('✔ Module preview successfully registered.')
         click.echo(f'\n\n✔✔✔ {success_message}\n')
     except subprocess.CalledProcessError as e:
+        # Echo any error output
+        if e.stdout:
+            for line in e.stdout.splitlines():
+                click.echo(line)
+        if e.stderr:
+            for line in e.stderr.splitlines():
+                click.echo(line)
         raise click.UsageError(f'❌ Failed to register module for preview: {e}')
     finally:
         # Revert version back to original after attempting registration
@@ -182,9 +192,21 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
             if is_local_develop:
                 raise click.UsageError(
                     f'❌ Cannot publish a local development module, please provide GIT_REF and GIT_REPO_URL')
-            subprocess.run(' '.join(publish_command), shell=True, check=True)
+            process = subprocess.run(' '.join(publish_command), shell=True, capture_output=True, text=True, check=True)
+
+            # Echo each line of the output
+            for line in process.stdout.splitlines():
+                click.echo(line)
+
             click.echo(f'\n\n✔✔✔ {success_message_published}\n')
     except subprocess.CalledProcessError as e:
+        # Echo any error output
+        if e.stdout:
+            for line in e.stdout.splitlines():
+                click.echo(line)
+        if e.stderr:
+            for line in e.stderr.splitlines():
+                click.echo(line)
         raise click.UsageError(f'❌ Failed to Publish module: {e}')
 
 
