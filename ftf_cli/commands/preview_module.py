@@ -159,7 +159,15 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
         click.echo('✔ Module preview successfully registered.')
         click.echo(f'\n\n✔✔✔ {success_message}\n')
     except subprocess.CalledProcessError as e:
-        raise click.UsageError(f'❌ lalalalala Failed to register module for preview: {e}, {e.stdout}, {e.stderr}')
+        # Echo any error output
+        if e.stdout:
+            for line in e.stdout.splitlines():
+                click.echo(line)
+        if e.stderr:
+            for line in e.stderr.splitlines():
+                click.echo(line)
+        sys.stdout.flush()
+        raise click.UsageError(f'❌ Failed to register module for preview: {e}')
     finally:
         # Revert version back to original after attempting registration
         if is_local_develop:
@@ -195,7 +203,14 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
 
             click.echo(f'\n\n✔✔✔ {success_message_published}\n')
     except subprocess.CalledProcessError as e:
-        raise click.UsageError(f'❌ Failed to Publish module: {e}, {e.stdout}, {e.stderr}')
+        # Echo any error output
+        if e.stdout:
+            for line in e.stdout.splitlines():
+                click.echo(line)
+        if e.stderr:
+            for line in e.stderr.splitlines():
+                click.echo(line)
+        raise click.UsageError(f'❌ Failed to Publish module: {e}')
 
 
 if __name__ == "__main__":
