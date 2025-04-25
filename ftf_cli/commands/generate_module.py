@@ -10,10 +10,35 @@ import importlib.resources as pkg_resources
 @click.option('-c', '--cloud', prompt='Cloud', help='The cloud provider for the module.')
 @click.option('-t', '--title', prompt='Title', help='The title of the module.')
 @click.option('-d', '--description', prompt='Description', help='The description of the module.')
-def generate_module(path, intent, flavor, cloud, title, description):
+@click.option('-v', '--version', default="1.0", help='The version of the module. If not provided, the default version will be 1.0. and the module will increment the version number.')
+def generate_module(path, intent, flavor, cloud, title, description, version):
     """Generate a new module."""
     
-    module_path = os.path.join(path, f"{intent}/{flavor}/1.0")
+    base_module_path = os.path.join(path, f"{intent}/{flavor}")
+    module_path = os.path.join(base_module_path, version)
+    
+    # If the version already exists, increment until we find an available one
+    if os.path.exists(module_path):
+        try:
+            base_version = float(version)
+            next_version = base_version
+            while os.path.exists(os.path.join(base_module_path, str(next_version))):
+                next_version = round(next_version + 0.1, 1)  # Round to avoid floating point issues
+            version = str(next_version)
+            module_path = os.path.join(base_module_path, version)
+            click.echo(f"Version {base_version} already exists. Using version {version} instead.")
+        except ValueError:
+            # Handle non-numeric versions
+            counter = 1
+            next_version = f"{version}_{counter}"
+            while os.path.exists(os.path.join(base_module_path, next_version)):
+                counter += 1
+                next_version = f"{version}_{counter}"
+            version = next_version
+            module_path = os.path.join(base_module_path, version)
+            click.echo(f"Version {version.split('_')[0]} already exists. Using version {version} instead.")
+    
+    # Create the directory
     os.makedirs(module_path, exist_ok=True)
 
     # Setup Jinja2 environment using package resources
