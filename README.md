@@ -14,12 +14,12 @@ To install FTF CLI using pip (or pipx)
 
 1. With pipx
    ```
-   pipx install git+https://github.com/Facets-cloud/module-development-cli.git
-   ```
+pipx install git+https://github.com/Facets-cloud/module-development-cli.git
+```
 2. With pip
    ```
-   pip install git+https://github.com/Facets-cloud/module-development-cli.git
-   ```
+pip install git+https://github.com/Facets-cloud/module-development-cli.git
+```
 
 ### Installing from source
 
@@ -61,17 +61,20 @@ After successful installation, you can use the `ftf` command to access CLI.
 
 #### Validate Facets
 
-Validate the `facets.yaml` file in the specified directory for correctness and schema compliance.
+Validate the facets YAML file in the specified directory for correctness and schema compliance.
 
 ```bash
 ftf validate-facets [OPTIONS] PATH
 ```
 
 **Arguments**:
-- `PATH`: Filesystem path to directory containing `facets.yaml`.
+- `PATH`: Filesystem path to directory containing the facets YAML file.
+
+**Options**:
+- `--filename TEXT`: Name of the facets YAML file to validate (default: facets.yaml).
 
 **Notes**:
-- Checks existence and YAML syntax of `facets.yaml`.
+- Checks existence and YAML syntax of the specified facets YAML file.
 - Validates adherence to Facets schema including spec fields.
 - Prints success message if valid; raises error and message if invalid.
 

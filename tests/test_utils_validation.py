@@ -22,7 +22,9 @@ def test_pattern_properties_value_not_dict_raises():
     spec = {
         "some_field": {
             "patternProperties": {
-                "^pattern$": "not_a_dict"
+                "^pattern$": {
+                    "type": "string"
+                }
             }
         }
     }

@@ -12,11 +12,11 @@ import requests
 ALLOWED_TYPES = ['string', 'number', 'boolean', 'enum']
 
 
-def validate_facets_yaml(path):
-    """Validate the existence and format of the facets.yaml file."""
-    yaml_path = os.path.join(path, 'facets.yaml')
+def validate_facets_yaml(path, filename="facets.yaml"):
+    """Validate the existence and format of specified facets yaml file in the given path."""
+    yaml_path = os.path.join(path, filename)
     if not os.path.isfile(yaml_path):
-        raise click.UsageError(f' facets.yaml file does not exist at {os.path.abspath(yaml_path)}')
+        raise click.UsageError(f' {filename} file does not exist at {os.path.abspath(yaml_path)}')
 
     try:
         with open(yaml_path, 'r') as f:
@@ -24,10 +24,10 @@ def validate_facets_yaml(path):
             validate_yaml(data)
 
     except yaml.YAMLError as exc:
-        raise click.UsageError(f' facets.yaml is not a valid YAML file: {exc}')
-
+        raise click.UsageError(f' {filename} is not a valid YAML file: {exc}')
 
     return yaml_path
+
 
 def generate_output_tree(obj):
     """ Generate a JSON schema from a output.tf file. """
@@ -296,7 +296,8 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
             if "patternProperties" in value:
                 pp = value["patternProperties"]
                 for pattern_key, pp_val in pp.items():
-                    if not isinstance(pp_val, dict):
+                    pattern_type = pp_val.get("type")
+                    if not isinstance(pattern_type, str) or pattern_type != "object":
                         raise click.UsageError(
                             f'patternProperties at {path}.{key} with pattern "{pattern_key}" must be an object.'
                         )
