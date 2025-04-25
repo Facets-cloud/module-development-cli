@@ -2,6 +2,7 @@ import os
 import click
 from ftf_cli.utils import is_logged_in, validate_boolean, generate_output_tree
 from ftf_cli.commands.validate_directory import validate_directory
+VALIDATED_FILES = ["variables.tf"]
 import subprocess
 import getpass
 import yaml
@@ -108,7 +109,12 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
         with open(yaml_file, 'w') as file:
             yaml.dump(facets_data, file)
 
-    # Extract credentials
+    # Add validated files information to facets_data
+    facets_data['iac'] = {'validated_files': VALIDATED_FILES}
+
+    # Write the updated facets.yaml with validated files
+    with open(yaml_file, 'w') as file:
+        yaml.dump(facets_data, file)
     control_plane_url = credentials['control_plane_url']
     username = credentials['username']
     token = credentials['token']
