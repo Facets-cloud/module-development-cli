@@ -30,7 +30,7 @@ def test_pattern_properties_value_not_dict_raises():
     }
     with pytest.raises(click.UsageError) as excinfo:
         check_no_array_or_invalid_pattern_in_spec(spec)
-    assert "patternProperties at spec.some_field with pattern \"^pattern$\" must be an object." in str(excinfo.value)
+    assert "patternProperties at spec.some_field with pattern \"^pattern$\" must be of type object." in str(excinfo.value)
 
 def test_valid_pattern_properties_nested_strings_pass():
     spec = {
