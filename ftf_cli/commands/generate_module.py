@@ -13,6 +13,9 @@ import importlib.resources as pkg_resources
 @click.option('-v', '--version', default="1.0", help='The version of the module. If not provided, the default version will be 1.0. and the module will increment the version number.')
 def generate_module(path, intent, flavor, cloud, title, description, version):
     """Generate a new module."""
+    if str(version).isdigit():
+        click.echo(f"❌ Version {version} is not a valid version. Use a valid version like 1.0")
+        return
     
     base_module_path = os.path.join(path, f"{intent}/{flavor}")
     module_path = os.path.join(base_module_path, version)
@@ -26,17 +29,11 @@ def generate_module(path, intent, flavor, cloud, title, description, version):
                 next_version = round(next_version + 0.1, 1)  # Round to avoid floating point issues
             version = str(next_version)
             module_path = os.path.join(base_module_path, version)
-            click.echo(f"Version {base_version} already exists. Using version {version} instead.")
+            click.echo(f"❌ Version {base_version} already exists. Use this version {version} instead.")
+            return
         except ValueError:
-            # Handle non-numeric versions
-            counter = 1
-            next_version = f"{version}_{counter}"
-            while os.path.exists(os.path.join(base_module_path, next_version)):
-                counter += 1
-                next_version = f"{version}_{counter}"
-            version = next_version
-            module_path = os.path.join(base_module_path, version)
-            click.echo(f"Version {version.split('_')[0]} already exists. Using version {version} instead.")
+            click.echo(f"❌ Version {version.split('_')[0]} already exists. Use this version {version} instead.")
+            return
     
     # Create the directory
     os.makedirs(module_path, exist_ok=True)
