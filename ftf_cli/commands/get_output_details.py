@@ -17,12 +17,12 @@ from ftf_cli.utils import is_logged_in
 @click.option(
     "-o",
     "--output",
-    prompt="Name of the output to get details for",
+    prompt="Name of the output type to get details for",
     type=str,
     help="The profile name to use or defaults to environment variable FACETS_PROFILE if set.",
 )
 def get_output_lookup_tree(profile, output):
-    """Get the lookup tree of a registered output from the control plane"""
+    """Get the lookup tree of a registered output type from the control plane"""
     try:
         # Check if profile is set
         click.echo(f"Profile selected: {profile}")
@@ -36,33 +36,33 @@ def get_output_lookup_tree(profile, output):
         username = credentials["username"]
         token = credentials["token"]
 
-        # Make a request to fetch outputs
+        # Make a request to fetch output types
         response = requests.get(
             f"{control_plane_url}/cc-ui/v1/tf-outputs", auth=(username, token)
         )
 
         if response.status_code == 200:
-            registered_outputs = {}
-            for registered_output in response.json():
-                registered_outputs[registered_output["name"]] = registered_output
+            registered_output_types = {}
+            for registered_output_type in response.json():
+                registered_output_types[registered_output_type["name"]] = registered_output_type
 
-            required_output = registered_outputs.get(output)
+            required_output_type = registered_output_types.get(output)
 
-            if not required_output:
-                click.echo(f"❌ Output {output} not found.")
+            if not required_output_type:
+                click.echo(f"❌ Output type {output} not found.")
                 return
 
-            if "lookupTree" not in required_output:
+            if "lookupTree" not in required_output_type:
                 lookup_tree = {"out": {"attributes": {}, "interfaces": {}}}
             else:
-                lookup_tree = json.loads(required_output["lookupTree"])
+                lookup_tree = json.loads(required_output_type["lookupTree"])
             click.echo(
-                f"Output lookup tree for {output}:\n{json.dumps(lookup_tree, indent=2)}"
+                f"Output type lookup tree for {output}:\n{json.dumps(lookup_tree, indent=2)}"
             )
 
         else:
             click.echo(
-                f"❌ Failed to fetch outputs. Status code: {response.status_code}"
+                f"❌ Failed to fetch output types. Status code: {response.status_code}"
             )
     except Exception as e:
         click.echo(f"❌ An error occurred: {e}")

@@ -140,7 +140,7 @@ Prompts for Control Plane URL, Username, Token, and Profile. This information is
 
 #### Add Input
 
-Add an predefined output as input for terraform module by specifying necessary details.
+Add an predefined output type as input for terraform module by specifying necessary details.
 
 ```bash
 ftf add-input [OPTIONS] /path/to/module
@@ -218,12 +218,12 @@ Prompts for Module Intent, Flavor, Version and Profile.
 - `-s, --stage`: (prompt) Stage of the terraform module to delete.
 - `-p, --profile`: (prompt) Profile name to use, defaults to `default`.
 
-#### Get Outputs
+#### Get Output Types
 
-Get registered outputs from control plane.
+Get registered output types from control plane.
 
 ```bash
-ftf get-outputs [OPTIONS]
+ftf get-output-types [OPTIONS]
 ```
 
 Prompts for Profile.
@@ -233,38 +233,38 @@ Prompts for Profile.
 
 #### Get Output Lookup Tree
 
-Get lookup tree of registered output from control plane.
+Get lookup tree of registered output type from control plane.
 
 ```bash
 ftf get-output-lookup-tree [OPTIONS]
 ```
 
-Prompts for Output Name and Profile.
+Prompts for Output Type Name and Profile.
 
 **Options**:
-- `-o, --output`: (prompt) Name of the output to get details for. 
+- `-o, --output`: (prompt) Name of the output type to get details for. 
 - `-p, --profile`: (prompt) Profile name to use, defaults to `default`.
 
-#### Register Output
+#### Register Output Type
 
-Register a new output in the control plane using a YAML definition file.
+Register a new output type in the control plane using a YAML definition file.
 
 ```bash
-ftf register-output YAML_PATH [OPTIONS]
+ftf register-output-type YAML_PATH [OPTIONS]
 ```
 
 **Arguments**:
-- `YAML_PATH`: Path to the YAML definition file for the output.
+- `YAML_PATH`: Path to the YAML definition file for the output type.
 
 **Options**:
 - `-p, --profile`: Profile name to use, defaults to environment variable FACETS_PROFILE if set, otherwise `default`.
-- `--inferred-from-module`: Flag to mark the output as inferred from a module.
+- `--inferred-from-module`: Flag to mark the output type as inferred from a module.
 
 **Notes**:
 - The YAML file must include `name` and `properties` fields.
 - The name should be in the format `@namespace/name`.
 - You can include a `providers` section in the YAML to specify provider information.
-- Ensures you're logged in before attempting to register the output.
+- Ensures you're logged in before attempting to register the output type.
 
 ## Contribution
 
