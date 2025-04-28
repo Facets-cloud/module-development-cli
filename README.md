@@ -245,6 +245,27 @@ Prompts for Output Name and Profile.
 - `-o, --output`: (prompt) Name of the output to get details for. 
 - `-p, --profile`: (prompt) Profile name to use, defaults to `default`.
 
+#### Register Output
+
+Register a new output in the control plane using a YAML definition file.
+
+```bash
+ftf register-output YAML_PATH [OPTIONS]
+```
+
+**Arguments**:
+- `YAML_PATH`: Path to the YAML definition file for the output.
+
+**Options**:
+- `-p, --profile`: Profile name to use, defaults to environment variable FACETS_PROFILE if set, otherwise `default`.
+- `--inferred-from-module`: Flag to mark the output as inferred from a module.
+
+**Notes**:
+- The YAML file must include `name` and `properties` fields.
+- The name should be in the format `@namespace/name`.
+- You can include a `providers` section in the YAML to specify provider information.
+- Ensures you're logged in before attempting to register the output.
+
 ## Contribution
 
 Feel free to fork the repository and submit pull requests for any feature enhancements or bug fixes.
