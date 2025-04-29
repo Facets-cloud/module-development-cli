@@ -6,7 +6,7 @@ test/test_intent
 __pycache__/
 *.py[cod]
 *$py.class
-
+.venv
 # C extensions
 *.so
 *.egg-info
