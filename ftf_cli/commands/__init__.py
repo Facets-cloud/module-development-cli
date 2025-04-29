@@ -6,8 +6,9 @@ from .expose_provider import expose_provider
 from .delete_module import delete_module
 from .login import login
 from .preview_module import preview_module
-from .get_outputs import get_outputs
+from .get_output_types import get_output_types
 from .get_output_details import get_output_lookup_tree
+from .register_output_type import register_output_type
 
 # Newly added command import
 
@@ -17,7 +18,8 @@ __all__ = [
     "delete_module",
     "expose_provider",
     "generate_module",
-    "get_outputs",
+    "get_output_types",
+    "register_output_type",
     "get_output_lookup_tree",
     "login",
     "preview_module",
