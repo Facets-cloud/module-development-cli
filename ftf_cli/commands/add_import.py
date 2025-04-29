@@ -5,7 +5,8 @@ import questionary
 import glob
 import hcl2
 import re
-from ftf_cli.utils import validate_facets_yaml
+from typing import Dict, List, Optional, Union, Any, Tuple
+from ftf_cli.utils import validate_facets_yaml, update_facets_yaml_imports
 
 
 @click.command()
@@ -39,7 +40,15 @@ from ftf_cli.utils import validate_facets_yaml
     is_flag=True,
     help="Run in non-interactive mode. Will use provided options and fail if required options are missing.",
 )
-def add_import(path, name=None, required=None, resource=None, index=None, key=None, non_interactive=False):
+def add_import(
+    path: str,
+    name: Optional[str] = None,
+    required: Optional[bool] = None,
+    resource: Optional[str] = None,
+    index: Optional[str] = None,
+    key: Optional[str] = None,
+    non_interactive: bool = False,
+) -> None:
     """Add an import declaration to the module.
 
     This command allows you to add import declarations to the facets.yaml file,
@@ -77,49 +86,15 @@ def add_import(path, name=None, required=None, resource=None, index=None, key=No
         click.echo(f"Found {len(resources)} resources.")
 
         # Handle resource selection
-        selected_resource = None
-
-        if resource and non_interactive:
-            # In non-interactive mode with provided resource address
-            # Find the resource in the discovered resources
-            for r in resources:
-                if r["address"] == resource:
-                    selected_resource = r
-                    break
-
-            if not selected_resource:
-                click.echo(f"❌ Resource '{resource}' not found in the module.")
-                return
-        elif resource:
-            # In interactive mode with resource suggestion
-            matches = [r for r in resources if r["address"] == resource]
-            if matches:
-                selected_resource = matches[0]
-                click.echo(
-                    f"Using provided resource: {selected_resource['address']}")
-            else:
-                click.echo(
-                    f"⚠️ Resource '{resource}' not found. Please select from available resources.")
-                selected_resource = select_resource(resources)
-        else:
-            # Fully interactive resource selection
-            if non_interactive:
-                click.echo(
-                    "❌ Resource address is required in non-interactive mode. Use --resource option.")
-                return
-            selected_resource = select_resource(resources)
-
+        selected_resource = select_resource_by_options(
+            resources, resource, non_interactive
+        )
         if not selected_resource:
             return
 
         # Configure import with CLI options or prompts
         import_config = configure_import(
-            selected_resource,
-            name,
-            required,
-            index,
-            key,
-            non_interactive
+            selected_resource, name, required, index, key, non_interactive
         )
 
         if not import_config:
@@ -133,26 +108,82 @@ def add_import(path, name=None, required=None, resource=None, index=None, key=No
         # Update the facets.yaml file
         if non_interactive:
             # In non-interactive mode, always add new or overwrite existing
-            result = update_facets_yaml_non_interactive(
-                facets_yaml_path, import_config)
+            result = update_facets_yaml_non_interactive(facets_yaml_path, import_config)
         else:
             result = update_facets_yaml(facets_yaml_path, import_config)
 
         if result:
             click.echo(
-                f"✅ Import declaration {'added to' if result == True else 'updated in'} facets.yaml:")
-            click.echo(f"   name: \"{import_config['name']}\"")
-            click.echo(
-                f"   resource_address: \"{import_config['resource_address']}\"")
-            click.echo(
-                f"   required: {str(import_config['required']).lower()}")
+                f"✅ Import declaration {'added to' if result == True else 'updated in'} facets.yaml:"
+            )
+            click.echo(f"   name: {import_config['name']}")
+            click.echo(f"   resource_address: {import_config['resource_address']}")
+            click.echo(f"   required: {str(import_config['required']).lower()}")
 
+    except yaml.YAMLError as e:
+        click.echo(f"❌ Error parsing YAML: {e}")
     except Exception as e:
-        click.echo(f"❌ Error adding import: {e}")
+        if "hcl" in str(e).lower():
+            click.echo(f"❌ Error parsing Terraform files: {e}")
+        else:
+            click.echo(f"❌ Unexpected error: {e}")
 
 
-def discover_resources(path):
-    """Discover all Terraform resources in the module directory."""
+def select_resource_by_options(
+    resources: List[Dict[str, Any]],
+    resource_address: Optional[str] = None,
+    non_interactive: bool = False,
+) -> Optional[Dict[str, Any]]:
+    """Select a resource based on the provided options or via interactive selection.
+
+    Args:
+        resources: List of discovered resources
+        resource_address: The resource address to find, if provided
+        non_interactive: Whether to run in non-interactive mode
+
+    Returns:
+        The selected resource or None if no resource was selected
+    """
+    if resource_address and non_interactive:
+        # In non-interactive mode with provided resource address
+        # Find the resource in the discovered resources
+        for r in resources:
+            if r["address"] == resource_address:
+                return r
+
+        click.echo(f"❌ Resource '{resource_address}' not found in the module.")
+        return None
+    elif resource_address:
+        # In interactive mode with resource suggestion
+        matches = [r for r in resources if r["address"] == resource_address]
+        if matches:
+            selected_resource = matches[0]
+            click.echo(f"Using provided resource: {selected_resource['address']}")
+            return selected_resource
+        else:
+            click.echo(
+                f"⚠️ Resource '{resource_address}' not found. Please select from available resources."
+            )
+            return select_resource(resources)
+    else:
+        # Fully interactive resource selection
+        if non_interactive:
+            click.echo(
+                "❌ Resource address is required in non-interactive mode. Use --resource option."
+            )
+            return None
+        return select_resource(resources)
+
+
+def discover_resources(path: str) -> List[Dict[str, Any]]:
+    """Discover all Terraform resources in the module directory.
+
+    Args:
+        path: Path to the module directory
+
+    Returns:
+        List of discovered resources with their metadata
+    """
     resources = []
 
     # Find all .tf files in the module directory
@@ -173,13 +204,17 @@ def discover_resources(path):
                     # Each resource_block is a dictionary with a single key (resource type)
                     for resource_type, resources_of_type in resource_block.items():
                         # Skip metadata fields
-                        if resource_type.startswith('__') and resource_type.endswith('__'):
+                        if resource_type.startswith("__") and resource_type.endswith(
+                            "__"
+                        ):
                             continue
 
                         # resources_of_type is a dictionary with resource names as keys
                         for resource_name, resource_config in resources_of_type.items():
                             # Skip metadata fields
-                            if resource_name.startswith('__') and resource_name.endswith('__'):
+                            if resource_name.startswith(
+                                "__"
+                            ) and resource_name.endswith("__"):
                                 continue
 
                             resource_address = f"{resource_type}.{resource_name}"
@@ -217,30 +252,36 @@ def discover_resources(path):
 
                             # Add the resource with appropriate metadata
                             if has_count:
-                                resources.append({
-                                    "address": f"{resource_address}",
-                                    "display": f"{resource_address} (with count)",
-                                    "indexed": True,
-                                    "index_type": "count",
-                                    "value": count_value,
-                                    "source_file": os.path.basename(tf_file)
-                                })
+                                resources.append(
+                                    {
+                                        "address": f"{resource_address}",
+                                        "display": f"{resource_address} (with count)",
+                                        "indexed": True,
+                                        "index_type": "count",
+                                        "value": count_value,
+                                        "source_file": os.path.basename(tf_file),
+                                    }
+                                )
                             elif has_for_each:
-                                resources.append({
-                                    "address": f"{resource_address}",
-                                    "display": f"{resource_address} (with for_each)",
-                                    "indexed": True,
-                                    "index_type": "for_each",
-                                    "value": for_each_value,
-                                    "source_file": os.path.basename(tf_file)
-                                })
+                                resources.append(
+                                    {
+                                        "address": f"{resource_address}",
+                                        "display": f"{resource_address} (with for_each)",
+                                        "indexed": True,
+                                        "index_type": "for_each",
+                                        "value": for_each_value,
+                                        "source_file": os.path.basename(tf_file),
+                                    }
+                                )
                             else:
-                                resources.append({
-                                    "address": resource_address,
-                                    "display": resource_address,
-                                    "indexed": False,
-                                    "source_file": os.path.basename(tf_file)
-                                })
+                                resources.append(
+                                    {
+                                        "address": resource_address,
+                                        "display": resource_address,
+                                        "indexed": False,
+                                        "source_file": os.path.basename(tf_file),
+                                    }
+                                )
         except Exception as e:
             click.echo(f"⚠️ Could not parse {tf_file}: {e}")
             click.echo(f"Error details: {str(e)}")
@@ -249,18 +290,20 @@ def discover_resources(path):
     return sorted(resources, key=lambda r: r["address"])
 
 
-def select_resource(resources):
-    """Prompt the user to select a resource from the list."""
+def select_resource(resources: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Prompt the user to select a resource from the list.
+
+    Args:
+        resources: List of discovered resources
+
+    Returns:
+        The selected resource or None if no resource was selected
+    """
     choices = []
     for r in resources:
-        source_info = f" (in {r['source_file']})"
-        # choices.append(f"{r['display']}{source_info}")
         choices.append(f"{r['display']}")
 
-    selected = questionary.select(
-        "Select resource to import:",
-        choices=choices
-    ).ask()
+    selected = questionary.select("Select resource to import:", choices=choices).ask()
 
     if not selected:
         click.echo("❌ No resource selected.")
@@ -271,7 +314,7 @@ def select_resource(resources):
 
     # Find the matching resource
     for r in resources:
-        if r['display'] == display_part:
+        if r["display"] == display_part:
             return r
 
     # Fallback to index-based lookup if exact match fails
@@ -279,25 +322,45 @@ def select_resource(resources):
     return resources[selected_index]
 
 
-def configure_import(resource, name=None, required=None, index=None, key=None, non_interactive=False):
-    """Configure import details based on user input."""
+def configure_import(
+    resource: Dict[str, Any],
+    name: Optional[str] = None,
+    required: Optional[bool] = None,
+    index: Optional[str] = None,
+    key: Optional[str] = None,
+    non_interactive: bool = False,
+) -> Optional[Dict[str, Any]]:
+    """Configure import details based on user input.
+
+    Args:
+        resource: The resource to import
+        name: The name of the import
+        required: Whether the import is required
+        index: The index for resources with count
+        key: The key for resources with for_each
+        non_interactive: Whether to run in non-interactive mode
+
+    Returns:
+        Import configuration dictionary or None if configuration failed
+    """
     # Get resource name from address (e.g., aws_s3_bucket.bucket -> bucket)
     default_name = resource["address"].split(".")[-1]
 
     # Handle name
     if name is None and non_interactive:
         click.echo(
-            "❌ Import name is required in non-interactive mode. Use --name option.")
+            "❌ Import name is required in non-interactive mode. Use --name option."
+        )
         return None
     elif name is None:
         name = questionary.text(
             "Import Name:",
             default=default_name,
-            validate=lambda text: len(text) > 0 or "Name cannot be empty"
+            validate=lambda text: len(text) > 0 or "Name cannot be empty",
         ).ask()
 
     # Validate name format
-    if not re.match(r'^[a-zA-Z0-9_]+$', name):
+    if not re.match(r"^[a-zA-Z0-9_]+$", name):
         message = "⚠️ Warning: Import name should only contain alphanumeric characters and underscores."
         if non_interactive:
             click.echo(f"{message} Continuing with provided name.")
@@ -307,8 +370,9 @@ def configure_import(resource, name=None, required=None, index=None, key=None, n
                 name = questionary.text(
                     "Import Name:",
                     default=default_name,
-                    validate=lambda text: len(text) > 0 and re.match(
-                        r'^[a-zA-Z0-9_]+$', text) or "Invalid name format"
+                    validate=lambda text: len(text) > 0
+                    and re.match(r"^[a-zA-Z0-9_]+$", text)
+                    or "Invalid name format",
                 ).ask()
 
     # Handle required flag
@@ -316,10 +380,7 @@ def configure_import(resource, name=None, required=None, index=None, key=None, n
         # Default to True if not specified in non-interactive mode
         required = True
     elif required is None:
-        required = questionary.confirm(
-            "Is this import required?",
-            default=True
-        ).ask()
+        required = questionary.confirm("Is this import required?", default=True).ask()
 
     # Handle indexed resources
     resource_address = resource["address"]
@@ -331,7 +392,8 @@ def configure_import(resource, name=None, required=None, index=None, key=None, n
                     resource_address = f"{resource_address}[{index}]"
                 else:
                     click.echo(
-                        f"❌ Invalid index format: {index}. Must be a number or '*'.")
+                        f"❌ Invalid index format: {index}. Must be a number or '*'."
+                    )
                     if non_interactive:
                         return None
                     # Fall back to interactive mode
@@ -340,20 +402,21 @@ def configure_import(resource, name=None, required=None, index=None, key=None, n
             if index is None:
                 if non_interactive:
                     click.echo(
-                        "❌ Index is required for count resources in non-interactive mode. Use --index option.")
+                        "❌ Index is required for count resources in non-interactive mode. Use --index option."
+                    )
                     return None
 
-                index_options = ["*", "0", "1",
-                                 "2", "3", "4", "5", "Custom..."]
+                index_options = ["*", "0", "1", "2", "3", "4", "5", "Custom..."]
                 index_choice = questionary.select(
-                    "Select resource index:",
-                    choices=index_options
+                    "Select resource index:", choices=index_options
                 ).ask()
 
                 if index_choice == "Custom...":
                     index = questionary.text(
                         "Enter resource index (number or '*' for all):",
-                        validate=lambda text: text == "*" or text.isdigit() or "Index must be a number or '*'"
+                        validate=lambda text: text == "*"
+                        or text.isdigit()
+                        or "Index must be a number or '*'",
                     ).ask()
                 else:
                     index = index_choice
@@ -370,18 +433,18 @@ def configure_import(resource, name=None, required=None, index=None, key=None, n
                     resource_address = f"{resource_address}[{key}]"
                 else:
                     # Add quotes for string keys
-                    resource_address = f"{resource_address}[\"{key}\"]"
+                    resource_address = f'{resource_address}["{key}"]'
             else:
                 if non_interactive:
                     click.echo(
-                        "❌ Key is required for for_each resources in non-interactive mode. Use --key option.")
+                        "❌ Key is required for for_each resources in non-interactive mode. Use --key option."
+                    )
                     return None
 
                 # For for_each, we can't easily predict the keys, so offer a text input
                 key = questionary.text(
                     "Enter resource key (string, number, or '*' for all):",
-                    validate=lambda text: len(
-                        text) > 0 or "Key cannot be empty"
+                    validate=lambda text: len(text) > 0 or "Key cannot be empty",
                 ).ask()
 
                 if key == "*":
@@ -391,17 +454,20 @@ def configure_import(resource, name=None, required=None, index=None, key=None, n
                     resource_address = f"{resource_address}[{key}]"
                 else:
                     # Add quotes for string keys
-                    resource_address = f"{resource_address}[\"{key}\"]"
+                    resource_address = f'{resource_address}["{key}"]'
 
-    return {
-        "name": name,
-        "resource_address": resource_address,
-        "required": required
-    }
+    return {"name": name, "resource_address": resource_address, "required": required}
 
 
-def validate_import_config(import_config):
-    """Validate the import configuration before saving."""
+def validate_import_config(import_config: Dict[str, Any]) -> bool:
+    """Validate the import configuration before saving.
+
+    Args:
+        import_config: The import configuration to validate
+
+    Returns:
+        True if the configuration is valid, False otherwise
+    """
     # Check for required fields
     if not import_config.get("name"):
         click.echo("❌ Import name is required.")
@@ -413,165 +479,97 @@ def validate_import_config(import_config):
 
     # Validate resource address format
     address = import_config["resource_address"]
-    if not re.match(r'^[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+(\[[^\]]+\])?$', address):
+    if not re.match(r"^[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+(\[[^\]]+\])?$", address):
         click.echo(f"❌ Invalid resource address format: {address}")
         return False
 
     return True
 
 
-def update_facets_yaml(yaml_path, import_config):
-    """Update the facets.yaml file with the import declaration."""
-    try:
-        # Load existing YAML
-        with open(yaml_path, "r") as file:
-            facets_data = yaml.safe_load(file) or {}
+def update_facets_yaml(
+    yaml_path: str, import_config: Dict[str, Any]
+) -> Union[bool, str]:
+    """Update the facets.yaml file with the import declaration.
 
-        # Add or update imports section
-        if "imports" not in facets_data:
-            facets_data["imports"] = []
+    Args:
+        yaml_path: Path to the facets.yaml file
+        import_config: The import configuration to add
 
-        # Check if an import with the same name already exists
-        for i, existing_import in enumerate(facets_data["imports"]):
-            if existing_import.get("name") == import_config["name"]:
+    Returns:
+        True if a new import was added, "updated" if an existing import was updated,
+        False if the operation was canceled or failed
+    """
+    result = update_facets_yaml_imports(yaml_path, import_config, mode="interactive")
+
+    # If an import with the same name exists, handle interactive prompts
+    if isinstance(result, dict) and result["action"] == "exists":
+        facets_data = result["facets_data"]
+        i = result["index"]
+
+        if not questionary.confirm(
+            f"Import with name '{import_config['name']}' already exists. Update it?",
+            default=True,
+        ).ask():
+            # User chose not to update, ask if they want to use a different name or quit
+            action = questionary.select(
+                "What would you like to do?",
+                choices=["Enter a different name", "Quit without adding import"],
+            ).ask()
+
+            if action == "Quit without adding import":
+                click.echo("❌ Import not added. Operation canceled.")
+                return False
+
+            # User wants to enter a different name
+            new_name = questionary.text(
+                "Enter a new import name:",
+                validate=lambda text: len(text) > 0 or "Name cannot be empty",
+            ).ask()
+
+            # Validate name format
+            if not re.match(r"^[a-zA-Z0-9_]+$", new_name):
+                click.echo(
+                    "⚠️ Warning: Import name should only contain alphanumeric characters and underscores."
+                )
                 if not questionary.confirm(
-                    f"Import with name '{import_config['name']}' already exists. Update it?",
-                    default=True
+                    "Continue with this name?", default=False
                 ).ask():
-                    # User chose not to update, ask if they want to use a different name or quit
-                    action = questionary.select(
-                        "What would you like to do?",
-                        choices=["Enter a different name",
-                                 "Quit without adding import"]
-                    ).ask()
-
-                    if action == "Quit without adding import":
-                        click.echo("❌ Import not added. Operation canceled.")
-                        return False
-
-                    # User wants to enter a different name
                     new_name = questionary.text(
                         "Enter a new import name:",
-                        validate=lambda text: len(
-                            text) > 0 or "Name cannot be empty"
+                        validate=lambda text: len(text) > 0
+                        and re.match(r"^[a-zA-Z0-9_]+$", text)
+                        or "Invalid name format",
                     ).ask()
 
-                    # Validate name format
-                    if not re.match(r'^[a-zA-Z0-9_]+$', new_name):
-                        click.echo(
-                            "⚠️ Warning: Import name should only contain alphanumeric characters and underscores.")
-                        if not questionary.confirm("Continue with this name?", default=False).ask():
-                            new_name = questionary.text(
-                                "Enter a new import name:",
-                                validate=lambda text: len(text) > 0 and re.match(
-                                    r'^[a-zA-Z0-9_]+$', text) or "Invalid name format"
-                            ).ask()
+            # Update the import configuration with the new name
+            import_config["name"] = new_name
 
-                    # Update the import configuration with the new name
-                    import_config["name"] = new_name
+            # Recursively call this function with the updated import_config
+            return update_facets_yaml(yaml_path, import_config)
 
-                    # Recursively call this function with the updated import_config
-                    return update_facets_yaml(yaml_path, import_config)
+        click.echo(f"⚠️ Updating existing import with name '{import_config['name']}'")
+        facets_data["imports"][i] = import_config
 
-                click.echo(
-                    f"⚠️ Updating existing import with name '{import_config['name']}'")
-                facets_data["imports"][i] = import_config
-                break
-        else:
-            # Add new import
-            facets_data["imports"].append(import_config)
+        # Write updated YAML back using the utility function
+        return update_facets_yaml_imports(
+            yaml_path, import_config, mode="non-interactive"
+        )
 
-        # Write updated YAML back to file with custom style
-        with open(yaml_path, "r") as file:
-            original_content = file.read()
-
-        # Create properly formatted imports section
-        imports_yaml = "imports:\n"
-        for imp in facets_data["imports"]:
-            imports_yaml += f"  - name: \"{imp['name']}\"\n"
-            imports_yaml += f"    resource_address: \"{imp['resource_address']}\"\n"
-            imports_yaml += f"    required: {str(imp['required']).lower()}\n"
-
-        # If imports section already exists, replace it
-        if "imports:" in original_content:
-            # Find the imports section and replace it
-            import_pattern = r"imports:.*?(?=\n\w+:|$)"
-            new_content = re.sub(
-                import_pattern, imports_yaml.rstrip(), original_content, flags=re.DOTALL)
-        else:
-            # Otherwise add the imports section at the end
-            new_content = original_content.rstrip() + "\n" + imports_yaml
-
-        # Write the updated content
-        with open(yaml_path, "w") as file:
-            file.write(new_content)
-
-        # Provide success message
-        click.echo(f"✅ Import declaration added to facets.yaml:")
-        click.echo(f"   name: \"{import_config['name']}\"")
-        click.echo(
-            f"   resource_address: \"{import_config['resource_address']}\"")
-        click.echo(f"   required: {str(import_config['required']).lower()}")
-
-        return True
-
-    except Exception as e:
-        click.echo(f"❌ Error updating facets.yaml: {e}")
-        return False
+    # For success cases, return the original result
+    return result
 
 
-def update_facets_yaml_non_interactive(yaml_path, import_config):
-    """Update the facets.yaml file with the import declaration in non-interactive mode."""
-    try:
-        # Load existing YAML
-        with open(yaml_path, "r") as file:
-            facets_data = yaml.safe_load(file) or {}
+def update_facets_yaml_non_interactive(
+    yaml_path: str, import_config: Dict[str, Any]
+) -> Union[bool, str]:
+    """Update the facets.yaml file with the import declaration in non-interactive mode.
 
-        # Add or update imports section
-        if "imports" not in facets_data:
-            facets_data["imports"] = []
+    Args:
+        yaml_path: Path to the facets.yaml file
+        import_config: The import configuration to add
 
-        # Check if an import with the same name already exists
-        for i, existing_import in enumerate(facets_data["imports"]):
-            if existing_import.get("name") == import_config["name"]:
-                # In non-interactive mode, always overwrite
-                click.echo(
-                    f"⚠️ Overwriting existing import with name '{import_config['name']}'")
-                facets_data["imports"][i] = import_config
-                result = "updated"
-                break
-        else:
-            # Add new import
-            facets_data["imports"].append(import_config)
-            result = True
-
-        # Write updated YAML back to file with custom style
-        with open(yaml_path, "r") as file:
-            original_content = file.read()
-
-        # Create properly formatted imports section
-        imports_yaml = "imports:\n"
-        for imp in facets_data["imports"]:
-            imports_yaml += f"  - name: \"{imp['name']}\"\n"
-            imports_yaml += f"    resource_address: \"{imp['resource_address']}\"\n"
-            imports_yaml += f"    required: {str(imp['required']).lower()}\n"
-
-        # If imports section already exists, replace it
-        if "imports:" in original_content:
-            # Find the imports section and replace it
-            import_pattern = r"imports:.*?(?=\n\w+:|$)"
-            new_content = re.sub(
-                import_pattern, imports_yaml.rstrip(), original_content, flags=re.DOTALL)
-        else:
-            # Otherwise add the imports section at the end
-            new_content = original_content.rstrip() + "\n" + imports_yaml
-
-        # Write the updated content
-        with open(yaml_path, "w") as file:
-            file.write(new_content)
-
-        return result
-
-    except Exception as e:
-        click.echo(f"❌ Error updating facets.yaml: {e}")
-        return False
+    Returns:
+        True if a new import was added, "updated" if an existing import was updated,
+        False if the operation failed
+    """
+    return update_facets_yaml_imports(yaml_path, import_config, mode="non-interactive")

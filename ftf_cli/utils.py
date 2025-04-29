@@ -341,6 +341,79 @@ def validate_boolean(ctx, param, value):
     else:
         raise click.BadParameter("Boolean flag must be true or false.")
 
+
+def update_facets_yaml_imports(yaml_path, import_config, mode="interactive"):
+    """Update the imports section of facets.yaml file.
+
+    Args:
+        yaml_path: Path to the facets.yaml file
+        import_config: Dictionary containing the import configuration
+        mode: 'interactive' or 'non-interactive'
+
+    Returns:
+        True if a new import was added, "updated" if an existing import was updated,
+        False if the operation was canceled or failed
+    """
+    try:
+        # Load existing YAML
+        with open(yaml_path, "r") as file:
+            facets_data = yaml.safe_load(file) or {}
+
+        # Add or update imports section
+        if "imports" not in facets_data:
+            facets_data["imports"] = []
+
+        # Check if an import with the same name already exists
+        for i, existing_import in enumerate(facets_data["imports"]):
+            if existing_import.get("name") == import_config["name"]:
+                if mode == "non-interactive":
+                    # In non-interactive mode, always overwrite
+                    click.echo(
+                        f"⚠️ Overwriting existing import with name '{import_config['name']}'")
+                    facets_data["imports"][i] = import_config
+                    result = "updated"
+                else:
+                    # In interactive mode, ask user for confirmation
+                    # This part is specific to the command and handled in the command file
+                    return {"action": "exists", "facets_data": facets_data, "index": i}
+                break
+        else:
+            # Add new import
+            facets_data["imports"].append(import_config)
+            result = True
+
+        # Write updated YAML back to file with custom style
+        with open(yaml_path, "r") as file:
+            original_content = file.read()
+
+        # Create properly formatted imports section
+        imports_yaml = "imports:\n"
+        for imp in facets_data["imports"]:
+            imports_yaml += f"  - name: {imp['name']}\n"
+            imports_yaml += f"    resource_address: {imp['resource_address']}\n"
+            imports_yaml += f"    required: {str(imp['required']).lower()}\n"
+
+        # If imports section already exists, replace it
+        if "imports:" in original_content:
+            # Find the imports section and replace it
+            import_pattern = r"imports:.*?(?=\n\w+:|$)"
+            new_content = re.sub(
+                import_pattern, imports_yaml.rstrip(), original_content, flags=re.DOTALL)
+        else:
+            # Otherwise add the imports section at the end
+            new_content = original_content.rstrip() + "\n" + imports_yaml
+
+        # Write the updated content
+        with open(yaml_path, "w") as file:
+            file.write(new_content)
+
+        return result
+
+    except Exception as e:
+        click.echo(f"❌ Error updating facets.yaml: {e}")
+        return False
+
+
 if __name__ == "__main__":
     sample_terraform_code = """
 variable "example_variable" {

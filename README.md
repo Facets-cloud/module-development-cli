@@ -214,17 +214,35 @@ Automatically discovers resources in the module and prompts for selecting a reso
 **Options**:
 - `-n, --name`: The name of the import to be added. If not provided, will prompt interactively.
 - `-r, --required`: Flag to indicate if this import is required. Default is True.
+- `--resource`: The Terraform resource address to import (e.g., 'aws_s3_bucket.bucket').
+- `--index`: For resources with 'count', specify the index (e.g., '0', '1', or '*' for all).
+- `--key`: For resources with 'for_each', specify the key (e.g., 'my-key' or '*' for all).
+- `--non-interactive`: Run in non-interactive mode. Requires --resource and --name options.
+
+**Examples**:
+```bash
+# Interactive mode
+ftf add-import /path/to/module
+
+# Non-interactive mode for regular resource
+ftf add-import /path/to/module --name key_vault --resource azurerm_key_vault.key_vault --non-interactive
+
+# Non-interactive mode for count resource
+ftf add-import /path/to/module --name count_vault --resource azurerm_key_vault.count_key_vault --index 1 --non-interactive
+
+# Non-interactive mode for for_each resource
+ftf add-import /path/to/module --name for_each_vault --resource azurerm_key_vault.for_each_key_vault --key my-key --non-interactive
+```
 
 **Notes**:
-- Discovers and lists all resources defined in the module's Terraform files, showing the source file for each resource
-- Supports resources with count or for_each meta-arguments with enhanced UI for selecting indices
-- Validates import names and resource addresses to ensure proper formatting
-- Warns when updating existing imports with the same name
+- Discovers and lists all resources defined in the module's Terraform files
+- Supports resources with count or for_each meta-arguments
+- Validates import names and resource addresses
 - Updates the facets.yaml file with the import declarations in the format:
   ```yaml
   imports:
-    - name: "s3_bucket"
-      resource_address: "aws_s3_bucket.bucket"
+    - name: s3_bucket
+      resource_address: aws_s3_bucket.bucket
       required: true
   ```
 
