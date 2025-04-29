@@ -20,10 +20,10 @@ from ftf_cli.utils import is_logged_in
     "--inferred-from-module",
     is_flag=True,
     default=False,
-    help="Flag to mark the output as inferred from a module.",
+    help="Flag to mark the output type as inferred from a module.",
 )
-def register_output(yaml_path, profile, inferred_from_module):
-    """Register a new output in the control plane using a YAML definition file."""
+def register_output_type(yaml_path, profile, inferred_from_module):
+    """Register a new output type in the control plane using a YAML definition file."""
     try:
         # Check if profile is set
         click.echo(f"Profile selected: {profile}")
@@ -40,22 +40,22 @@ def register_output(yaml_path, profile, inferred_from_module):
         # Parse the YAML file
         with open(yaml_path, "r") as file:
             try:
-                output_def = yaml.safe_load(file)
+                output_type_def = yaml.safe_load(file)
             except yaml.YAMLError as e:
                 click.echo(f"❌ Error parsing YAML file: {e}")
                 return
 
         # Validate the YAML structure
-        if not output_def.get("name"):
+        if not output_type_def.get("name"):
             click.echo("❌ 'name' field is required in the YAML file.")
             return
         
-        if not output_def.get("properties"):
+        if not output_type_def.get("properties"):
             click.echo("❌ 'properties' field is required in the YAML file.")
             return
 
         # Parse the name to extract namespace and name
-        name_parts = output_def["name"].split("/", 1)
+        name_parts = output_type_def["name"].split("/", 1)
         if len(name_parts) != 2:
             click.echo("❌ Name should be in the format '@namespace/name'.")
             return
@@ -65,8 +65,8 @@ def register_output(yaml_path, profile, inferred_from_module):
 
         # Prepare providers list
         providers = []
-        if "providers" in output_def:
-            for provider_name, provider_data in output_def["providers"].items():
+        if "providers" in output_type_def:
+            for provider_name, provider_data in output_type_def["providers"].items():
                 providers.append({
                     "name": provider_name,
                     "source": provider_data.get("source", ""),
@@ -79,7 +79,7 @@ def register_output(yaml_path, profile, inferred_from_module):
             "namespace": namespace,
             "lookupTree": None,
             "inferredFromModule": inferred_from_module,
-            "properties": output_def["properties"],
+            "properties": output_type_def["properties"],
             "providers": providers
         }
 
@@ -88,7 +88,7 @@ def register_output(yaml_path, profile, inferred_from_module):
         username = credentials["username"]
         token = credentials["token"]
 
-        # Make a request to register the output
+        # Make a request to register the output type
         response = requests.post(
             f"{control_plane_url}/cc-ui/v1/tf-outputs",
             json=request_payload,
@@ -96,7 +96,7 @@ def register_output(yaml_path, profile, inferred_from_module):
         )
 
         if response.status_code in [200, 201]:
-            click.echo(f"✅ Successfully registered output: {output_def['name']}")
+            click.echo(f"✅ Successfully registered output type: {output_type_def['name']}")
         else:
             error_message = response.text
             try:
@@ -105,7 +105,7 @@ def register_output(yaml_path, profile, inferred_from_module):
                     error_message = error_json["message"]
             except:
                 pass
-            click.echo(f"❌ Failed to register output. Status code: {response.status_code}, Error: {error_message}")
+            click.echo(f"❌ Failed to register output type. Status code: {response.status_code}, Error: {error_message}")
     
     except Exception as e:
         click.echo(f"❌ An error occurred: {e}")

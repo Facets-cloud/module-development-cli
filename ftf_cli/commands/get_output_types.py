@@ -13,8 +13,8 @@ from ftf_cli.utils import is_logged_in
     default=lambda: os.getenv("FACETS_PROFILE", "default"),
     help="The profile name to use or defaults to environment variable FACETS_PROFILE if set.",
 )
-def get_outputs(profile):
-    """Get the list of registered outputs in the control plane"""
+def get_output_types(profile):
+    """Get the list of registered output types in the control plane"""
     try:
         # Check if profile is set
         click.echo(f"Profile selected: {profile}")
@@ -28,25 +28,25 @@ def get_outputs(profile):
         username = credentials["username"]
         token = credentials["token"]
 
-        # Make a request to fetch outputs
+        # Make a request to fetch output types
         response = requests.get(
             f"{control_plane_url}/cc-ui/v1/tf-outputs", auth=(username, token)
         )
 
         if response.status_code == 200:
-            registered_outputs = []
-            for output in response.json():
-                registered_outputs.append(output["name"])
-            registered_outputs.sort()
-            if len(registered_outputs) == 0:
-                click.echo("No outputs registered.")
+            registered_output_types = []
+            for output_type in response.json():
+                registered_output_types.append(output_type["name"])
+            registered_output_types.sort()
+            if len(registered_output_types) == 0:
+                click.echo("No output types registered.")
                 return
-            click.echo("Registered outputs:")
-            for output in registered_outputs:
-                click.echo(f"- {output}")
+            click.echo("Registered output types:")
+            for output_type in registered_output_types:
+                click.echo(f"- {output_type}")
         else:
             click.echo(
-                f"❌ Failed to fetch outputs. Status code: {response.status_code}"
+                f"❌ Failed to fetch output types. Status code: {response.status_code}"
             )
     except Exception as e:
         click.echo(f"❌ An error occurred: {e}")
