@@ -201,6 +201,33 @@ Prompts for Provider Name, Source, Version, Attributes and Output.
 - By default, a default output will be created if none is present of type intent provided in facets.yaml with name "default".
 
 
+#### Add Import
+
+Add import declarations to the module to specify resources that should be imported.
+
+```bash
+ftf add-import [OPTIONS] /path/to/module
+```
+
+Automatically discovers resources in the module and prompts for selecting a resource, naming the import, and specifying if it's required.
+
+**Options**:
+- `-n, --name`: The name of the import to be added. If not provided, will prompt interactively.
+- `-r, --required`: Flag to indicate if this import is required. Default is True.
+
+**Notes**:
+- Discovers and lists all resources defined in the module's Terraform files, showing the source file for each resource
+- Supports resources with count or for_each meta-arguments with enhanced UI for selecting indices
+- Validates import names and resource addresses to ensure proper formatting
+- Warns when updating existing imports with the same name
+- Updates the facets.yaml file with the import declarations in the format:
+  ```yaml
+  imports:
+    - name: "s3_bucket"
+      resource_address: "aws_s3_bucket.bucket"
+      required: true
+  ```
+
 #### Delete Module
 
 Delete a registered terraform module from control plane.

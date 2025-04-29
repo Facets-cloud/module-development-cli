@@ -10,6 +10,7 @@ from ftf_cli.commands.delete_module import delete_module
 from ftf_cli.commands.get_output_types import get_output_types
 from ftf_cli.commands.get_output_details import get_output_lookup_tree
 from ftf_cli.commands.register_output_type import register_output_type
+from ftf_cli.commands.add_import import add_import
 
 
 @click.group()
@@ -18,6 +19,7 @@ def cli():
     pass
 
 
+cli.add_command(add_import)
 cli.add_command(add_input)
 cli.add_command(add_variable)
 cli.add_command(delete_module)

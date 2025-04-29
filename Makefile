@@ -17,7 +17,7 @@ install: setup
 	pip install .
 
 test: setup
-	pip install pytest
+	$(PYTHON) -m pip install pytest
 	pytest tests
 
 all: setup test install

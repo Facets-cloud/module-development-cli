@@ -9,10 +9,12 @@ from .preview_module import preview_module
 from .get_output_types import get_output_types
 from .get_output_details import get_output_lookup_tree
 from .register_output_type import register_output_type
+from .add_import import add_import
 
 # Newly added command import
 
 __all__ = [
+    "add_import",
     "add_input",
     "add_variable",
     "delete_module",
