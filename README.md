@@ -4,31 +4,30 @@ FTF CLI is a command-line interface (CLI) tool that facilitates module generatio
 
 ## Installation
 
-You can install FTF CLI from pip, pipx or directly from source.
+You can install FTF CLI using pip, pipx, or directly from source.
 
-### Installing with `pip` / `pipx`
+### Installing with pip / pipx
 
-To install FTF CLI using pip (or pipx)
+#### Using pipx (recommended)
 
-#### Steps
-
-1. With pipx
-   ```
+```bash
 pipx install git+https://github.com/Facets-cloud/module-development-cli.git
 ```
-2. With pip
-   ```
+
+#### Using pip
+
+```bash
 pip install git+https://github.com/Facets-cloud/module-development-cli.git
 ```
 
 ### Installing from source
 
-To install FTF CLI locally, follow these steps:
+To install FTF CLI from source, follow these steps:
 
 #### Prerequisites
 
 - Python 3.6 or later
-- Virtual Environment (recommended)
+- Virtual environment (recommended)
 
 #### Steps
 
@@ -46,8 +45,7 @@ To install FTF CLI locally, follow these steps:
    source env/bin/activate   # On Windows use `env\Scripts\activate`
    ```
 
-3. **Install dependencies**:
-   Ensure `pip` is upgraded and install the required packages:
+3. **Install the package**:
 
    ```bash
    pip install .
