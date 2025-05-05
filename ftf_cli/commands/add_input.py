@@ -57,7 +57,7 @@ def add_input(path, profile, name, display_name, description, output_type):
         )
         return
 
-    # validate if facets.yaml and output.tf exists
+    # validate if facets.yaml and variables.tf exists
     facets_yaml = os.path.join(path, "facets.yaml")
     variable_file = os.path.join(path, "variables.tf")
     if not (os.path.exists(variable_file) and os.path.exists(facets_yaml)):
