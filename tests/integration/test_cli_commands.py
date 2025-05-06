@@ -39,7 +39,7 @@ def test_generate_module(setup_module_folder):
     assert os.path.exists(module_path)
     assert os.path.exists(os.path.join(module_path, 'main.tf'))
     assert os.path.exists(os.path.join(module_path, 'variables.tf'))
-    assert os.path.exists(os.path.join(module_path, 'output.tf'))
+    assert os.path.exists(os.path.join(module_path, 'outputs.tf'))
     assert os.path.exists(os.path.join(module_path, 'facets.yaml'))
 
 

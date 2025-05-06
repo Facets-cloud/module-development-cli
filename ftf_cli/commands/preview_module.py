@@ -31,10 +31,10 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
     """Register a module at the specified path using the given or default profile."""
 
     def generate_and_write_output_tree(path):
-        output_file = os.path.join(path, 'output.tf')
+        output_file = os.path.join(path, 'outputs.tf')
         output_json_path = os.path.join(path, 'output-lookup-tree.json')
 
-        # Check if output.tf exists
+        # Check if outputs.tf exists
         if not os.path.exists(output_file):
             click.echo(f"Warning: {output_file} not found. Skipping output tree generation.")
             return None
