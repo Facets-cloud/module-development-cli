@@ -311,8 +311,8 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
             field_type = value.get("type")
             if field_type == "array":
                 raise click.UsageError(
-                    f'Invalid array type found at {path}.{key}. '
-                    f'Arrays are not allowed in spec. Use patternProperties for array-like structures instead.'
+                    f"Invalid array type found at {path}.{key}. "
+                    f"Arrays are not allowed in spec. Use patternProperties for array-like structures instead."
                 )
             if "patternProperties" in value:
                 pp = value["patternProperties"]
@@ -320,12 +320,15 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
                     pattern_type = pp.get("type")
                     if not isinstance(pattern_type, str) or pattern_type != "object":
                         raise click.UsageError(
-                            f'patternProperties at {path}.{key} with keyPattern must be of type object.'
+                            f"patternProperties at {path}.{key} with keyPattern must be of type object."
                         )
                 else:
                     for pattern_key, pp_val in pp.items():
                         pattern_type = pp_val.get("type")
-                        if not isinstance(pattern_type, str) or pattern_type != "object":
+                        if (
+                            not isinstance(pattern_type, str)
+                            or pattern_type != "object"
+                        ):
                             raise click.UsageError(
                                 f'patternProperties at {path}.{key} with pattern "{pattern_key}" must be of type object.'
                             )
