@@ -18,7 +18,7 @@ from ftf_cli.utils import (
     "--name",
     prompt="Variable Name (dot-separated for nested)",
     type=str,
-    help="Name allowing nested dot-separated variants. Use {{KEY}} for dynamic keys.",
+    help="Name allowing nested dot-separated variants. Use * for dynamic keys.",
 )
 @click.option(
     "-t",
@@ -90,7 +90,7 @@ def add_variable(name, type, description, options, required, default, path):
 
         keys = name.split(".")
 
-        if keys[-1] == "{{KEY}}":
+        if keys[-1] == "*":
             raise click.UsageError(
                 "❌ Variable ending with pattern properties is not allowed."
             )
@@ -103,7 +103,7 @@ def add_variable(name, type, description, options, required, default, path):
 
         instance_description = data["description"] if "description" in data else ""
 
-        if keys[0] == "{{KEY}}":
+        if keys[0] == "*":
 
             if "spec" not in data or not data["spec"]:
                 data["spec"] = {"type": "object", "patternProperties": {}}
@@ -135,7 +135,7 @@ def add_variable(name, type, description, options, required, default, path):
         tail = data["spec"]
 
         for index, key in enumerate(keys_without_last):
-            if index + 1 < len(keys) and keys[index + 1] == "{{KEY}}":
+            if index + 1 < len(keys) and keys[index + 1] == "*":
                 if key not in sub_data or sub_data[key] is None:
                     sub_data[key] = {"type": "object", "patternProperties": {}}
 
@@ -147,7 +147,7 @@ def add_variable(name, type, description, options, required, default, path):
                 sub_data = sub_data[key]["patternProperties"]
                 continue
 
-            if key == "{{KEY}}":
+            if key == "*":
                 if "type" not in sub_data:
                     sub_data["type"] = "object"
                 if "keyPattern" not in sub_data:
@@ -177,7 +177,7 @@ def add_variable(name, type, description, options, required, default, path):
         updated_key = ""
         updated_type = None
         for key in keys:
-            if key == "{{KEY}}":
+            if key == "*":
                 updated_type = "any"
                 break
             updated_key = f"{updated_key}.{key}" if updated_key != "" else key
