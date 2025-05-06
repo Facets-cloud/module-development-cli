@@ -1,15 +1,15 @@
 from subprocess import run
 import click
-import os
 import yaml
 from ftf_cli.utils import (
-    ensure_formatting_for_object,
     validate_facets_yaml,
     validate_variables_tf,
     ALLOWED_TYPES,
     update_spec_variable,
     validate_number,
 )
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString
+from ruamel.yaml import YAML
 
 
 @click.command()
@@ -18,7 +18,7 @@ from ftf_cli.utils import (
     "--name",
     prompt="Variable Name (dot-separated for nested)",
     type=str,
-    help="Name allowing nested dot-separated variants. Use * for dynamic keys.",
+    help="Name allowing nested dot-separated variants. Use '*' for dynamic keys where you want to use regex and pass the regex using --pattern flag For example: 'my_var.*.key'.",
 )
 @click.option(
     "-t",
@@ -42,10 +42,19 @@ from ftf_cli.utils import (
 )
 @click.option("--required", is_flag=True, help="Mark the variable as required.")
 @click.option("--default", type=str, help="Provide a default value for the variable.")
+@click.option(
+    "-p",
+    "--pattern",
+    type=str,
+    default=None,
+    help='Provide comma separated regex for pattern properties. Eg: \'"^[a-z]+$","^[a-zA-Z0-9._-]+$"\'',
+)
 @click.argument("path", type=click.Path(exists=True))
-def add_variable(name, type, description, options, required, default, path):
+def add_variable(name, type, description, options, required, default, path, pattern):
     """Add a new variable to the module."""
     try:
+        yaml = YAML()
+        yaml.preserve_quotes = True
         if run("terraform version", shell=True, capture_output=True).returncode != 0:
             click.echo(
                 "❌ Terraform is not installed. Please install Terraform to continue."
@@ -90,51 +99,41 @@ def add_variable(name, type, description, options, required, default, path):
 
         keys = name.split(".")
 
-        if keys[-1] == "*":
+        if keys[-1] == "*" or keys[0] == "*":
             raise click.UsageError(
-                "❌ Variable ending with pattern properties is not allowed."
+                "❌ Variable starting or ending with pattern properties is not allowed."
             )
 
-        keys_without_last = keys[:-1]
+        for index in range(len(keys)):
+            if keys[index] == "*" and index + 1 < len(keys) and keys[index + 1] == "*":
+                raise click.UsageError(
+                    "❌ Variable with consecutive pattern properties is not allowed."
+                )
+
+        wildcard_keys = [i for i in keys if i == "*"]
+        patterns = pattern.split(",") if pattern else []
+
+        if len(wildcard_keys) != len(patterns):
+            raise click.UsageError(
+                "❌ Number of wildcard keys and patterns must match."
+            )
 
         # Load and update facets.yaml
         with open(yaml_path, "r") as yaml_file:
-            data = yaml.safe_load(yaml_file) or {}
+            data = yaml.load(yaml_file) or {}
 
         instance_description = data["description"] if "description" in data else ""
 
-        if keys[0] == "*":
+        if "spec" not in data or not data["spec"]:
+            data["spec"] = {"type": "object", "properties": {}}
 
-            if "spec" not in data or not data["spec"]:
-                data["spec"] = {"type": "object", "patternProperties": {}}
-
-            check_and_raise_execption(
-                data["spec"], "properties", "patternProperties", "spec"
-            )
-
-            if (
-                "patternProperties" not in data["spec"]
-                or data["spec"]["patternProperties"] is None
-            ):
-                data["spec"]["patternProperties"] = {}
-
-            sub_data = data["spec"]["patternProperties"]
-        else:
-
-            if "spec" not in data or not data["spec"]:
-                data["spec"] = {"type": "object", "properties": {}}
-
-            check_and_raise_execption(
-                data["spec"], "patternProperties", "properties", "spec"
-            )
-
-            if "properties" not in data["spec"] or data["spec"]["properties"] is None:
-                data["spec"]["properties"] = {}
-            sub_data = data["spec"]["properties"]
+        if "properties" not in data["spec"] or data["spec"]["properties"] is None:
+            data["spec"]["properties"] = {}
+        sub_data = data["spec"]["properties"]
 
         tail = data["spec"]
 
-        for index, key in enumerate(keys_without_last):
+        for index, key in enumerate(keys):
             if index + 1 < len(keys) and keys[index + 1] == "*":
                 if key not in sub_data or sub_data[key] is None:
                     sub_data[key] = {"type": "object", "patternProperties": {}}
@@ -148,22 +147,33 @@ def add_variable(name, type, description, options, required, default, path):
                 continue
 
             if key == "*":
-                if "type" not in sub_data:
-                    sub_data["type"] = "object"
-                if "keyPattern" not in sub_data:
-                    sub_data["keyPattern"] = "^[a-zA-Z0-9_.-]+$"
-                if "properties" not in sub_data:
-                    sub_data["properties"] = {}
+                old_keys = list(sub_data.keys())
+                old_value = None
+                if len(old_keys) > 0:
+                    old_value = sub_data[old_keys[0]]
+                    del sub_data[old_keys[0]]
+
+                pattern_key = patterns.pop(0)
+                pattern_key = DoubleQuotedScalarString(pattern_key.replace('"', ""))
+                sub_data[pattern_key] = (
+                    old_value if old_value else {"type": "object", "properties": {}}
+                )
+                sub_data = sub_data[pattern_key]
                 tail = sub_data
                 sub_data = sub_data["properties"]
             else:
-                if key not in sub_data or sub_data[key] is None:
+                if (key not in sub_data or sub_data[key] is None) and index + 1 < len(
+                    keys
+                ):
                     sub_data[key] = {"type": "object", "properties": {}}
-                check_and_raise_execption(
-                    sub_data[key], "patternProperties", "properties", key
-                )
-                tail = sub_data
-                sub_data = sub_data[key]["properties"]
+                    check_and_raise_execption(
+                        sub_data[key], "patternProperties", "properties", key
+                    )
+                    tail = sub_data
+                    sub_data = sub_data[key]["properties"]
+                elif index + 1 < len(keys):
+                    tail = sub_data
+                    sub_data = sub_data[key]["properties"]
 
         if required:
             tail["required"] = tail.get("required", [])
