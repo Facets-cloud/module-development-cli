@@ -155,7 +155,7 @@ def add_input(path, profile, name, display_name, description, output_type):
 
         # write facets yaml data to file
         with open(facets_yaml, "w") as file:
-            yaml.dump(facets_data, file)
+            yaml.dump(facets_data, file, sort_keys=False)
             file.close()
 
         click.echo(f"✅ Input added to the {facets_yaml}.")

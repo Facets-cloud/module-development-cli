@@ -151,7 +151,7 @@ def expose_provider(path, name, source, version, attributes, output):
         facets_yaml["outputs"][output]["providers"].update(providers)
 
         with open(facets_yaml_path, "w") as file:
-            yaml.dump(facets_yaml, file, default_flow_style=False)
+            yaml.dump(facets_yaml, file, default_flow_style=False, sort_keys=False)
             file.close()
 
         click.echo(f"✅ Sucessfully exposed the provider {name} in output {output}")

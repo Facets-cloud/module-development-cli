@@ -184,6 +184,7 @@ def add_variable(name, type, description, options, required, default, path, patt
 
         with open(yaml_path, "w") as yaml_file:
             yaml.dump(data, yaml_file)
+            yaml_file.close()
 
         updated_key = ""
         updated_type = None
