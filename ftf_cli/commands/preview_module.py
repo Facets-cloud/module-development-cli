@@ -1,4 +1,5 @@
 import os
+import sys
 import click
 from ftf_cli.utils import is_logged_in, validate_boolean, generate_output_tree
 from ftf_cli.commands.validate_directory import validate_directory
@@ -67,7 +68,7 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
     credentials = is_logged_in(profile)
     if not credentials:
         click.echo(f'❌ Not logged in under profile {profile}. Please login first.')
-        return
+        sys.exit(1)
 
     click.echo(f'Validating directory at {path}...')
 
@@ -80,7 +81,7 @@ def preview_module(path, profile, auto_create_intent, publishable, git_repo_url,
         validate_directory.invoke(ctx)
     except click.ClickException as e:
         click.echo(f'❌ Validation failed: {e}')
-        return
+        sys.exit(1)
 
     # Warn if GIT_REPO_URL and GIT_REF are considered local
     if not git_repo_url:

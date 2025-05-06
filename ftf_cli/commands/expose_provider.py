@@ -1,3 +1,4 @@
+import sys
 import click
 import yaml
 import os
@@ -64,7 +65,7 @@ def expose_provider(path, name, source, version, attributes, output):
             click.echo(
                 f"❌ {output_file} or {facets_yaml_path} not found. Run validate directory command to validate directory"
             )
-            return
+            sys.exit(1)
 
         with open(facets_yaml_path, "r") as file:
             facets_yaml = yaml.safe_load(file)
@@ -86,7 +87,7 @@ def expose_provider(path, name, source, version, attributes, output):
                 click.echo(
                     f"❌ Invalid facets yaml {facets_yaml_path}. Run validate directory command to validate."
                 )
-                return
+                sys.exit(1)
 
             output_type = f"@outputs/{intent}"
 
@@ -105,7 +106,7 @@ def expose_provider(path, name, source, version, attributes, output):
             ).ask()
         elif output not in output_list:
             click.echo(f"❌ Invalid output {output}. Please select from {output_list}")
-            return
+            sys.exit(1)
 
         # generate output selection menu
         output_lookup = generate_output_lookup(path)
@@ -157,6 +158,7 @@ def expose_provider(path, name, source, version, attributes, output):
 
     except Exception as e:
         click.echo(f"❌ Error encounter while adding provider {name}: {e}")
+        sys.exit(1)
 
 
 def generate_default_output(output_type):

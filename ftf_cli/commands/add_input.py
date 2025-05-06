@@ -1,6 +1,7 @@
 import json
 import re
 from subprocess import run
+import sys
 import traceback
 import click
 import os
@@ -59,7 +60,7 @@ def add_input(path, profile, name, display_name, description, output_type):
         click.echo(
             "❌ Terraform is not installed. Please install Terraform to continue."
         )
-        return
+        sys.exit(1)
 
     # validate if facets.yaml and variables.tf exists
     facets_yaml = os.path.join(path, "facets.yaml")
@@ -68,7 +69,7 @@ def add_input(path, profile, name, display_name, description, output_type):
         click.echo(
             f"❌ {variable_file} or {facets_yaml} not found. Run validate directory command to validate directory."
         )
-        return
+        sys.exit(1)
     try:
 
         with open(facets_yaml, "r") as file:
@@ -112,7 +113,7 @@ def add_input(path, profile, name, display_name, description, output_type):
         credentials = is_logged_in(profile)
         if not credentials:
             click.echo(f"❌ Not logged in under profile {profile}. Please login first.")
-            return
+            sys.exit(1)
 
         # Extract credentials
         control_plane_url = credentials["control_plane_url"]
@@ -133,7 +134,7 @@ def add_input(path, profile, name, display_name, description, output_type):
                 click.echo(
                     f"❌ {output} not found in registered outputs. Please select a valid output type from {registered_output_names}."
                 )
-                return
+                sys.exit(1)
 
         # get output tree for each output
         output_trees = {}
@@ -162,6 +163,7 @@ def add_input(path, profile, name, display_name, description, output_type):
     except Exception as e:
         click.echo(f"❌ Error encounter while adding input {name}: {e}")
         traceback.print_exc()
+        sys.exit(1)
 
 
 def generate_inputs_variable(output_trees):

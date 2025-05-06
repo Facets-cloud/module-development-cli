@@ -1,4 +1,5 @@
 import os
+import sys
 import click
 from subprocess import run, CalledProcessError
 from ftf_cli.utils import validate_facets_yaml, validate_boolean
@@ -17,7 +18,7 @@ def validate_directory(path, check_only, skip_terraform_validation):
     # Check if Terraform is installed
     if run("terraform version", shell=True, capture_output=True).returncode != 0:
         click.echo('❌ Terraform is not installed. Please install Terraform to continue.')
-        return
+        sys.exit(1)
 
     try:
         # Validate the facets.yaml file in the given path

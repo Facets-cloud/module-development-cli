@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import click
 import requests
 import yaml
@@ -30,12 +31,12 @@ def register_output_type(yaml_path, profile, inferred_from_module):
         credentials = is_logged_in(profile)
         if not credentials:
             click.echo(f"❌ Not logged in under profile {profile}. Please login first.")
-            return
+            sys.exit(1)
 
         # Ensure file is a yaml file
         if not yaml_path.endswith((".yaml", ".yml")):
             click.echo("❌ The provided file must be a YAML file (.yaml or .yml extension).")
-            return
+            sys.exit(1)
 
         # Parse the YAML file
         with open(yaml_path, "r") as file:
@@ -43,22 +44,22 @@ def register_output_type(yaml_path, profile, inferred_from_module):
                 output_type_def = yaml.safe_load(file)
             except yaml.YAMLError as e:
                 click.echo(f"❌ Error parsing YAML file: {e}")
-                return
+                sys.exit(1)
 
         # Validate the YAML structure
         if not output_type_def.get("name"):
             click.echo("❌ 'name' field is required in the YAML file.")
-            return
+            sys.exit(1)
         
         if not output_type_def.get("properties"):
             click.echo("❌ 'properties' field is required in the YAML file.")
-            return
+            sys.exit(1)
 
         # Parse the name to extract namespace and name
         name_parts = output_type_def["name"].split("/", 1)
         if len(name_parts) != 2:
             click.echo("❌ Name should be in the format '@namespace/name'.")
-            return
+            sys.exit(1)
         
         namespace = name_parts[0]  # Keep the @ symbol
         name = name_parts[1]
@@ -106,6 +107,8 @@ def register_output_type(yaml_path, profile, inferred_from_module):
             except:
                 pass
             click.echo(f"❌ Failed to register output type. Status code: {response.status_code}, Error: {error_message}")
+            sys.exit(1)
     
     except Exception as e:
         click.echo(f"❌ An error occurred: {e}")
+        sys.exit(1)

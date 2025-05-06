@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import click
 import requests
 
@@ -21,7 +22,7 @@ def get_output_types(profile):
         credentials = is_logged_in(profile)
         if not credentials:
             click.echo(f"❌ Not logged in under profile {profile}. Please login first.")
-            return
+            sys.exit(1)
 
         # Extract credentials
         control_plane_url = credentials["control_plane_url"]
@@ -48,5 +49,7 @@ def get_output_types(profile):
             click.echo(
                 f"❌ Failed to fetch output types. Status code: {response.status_code}"
             )
+            sys.exit(1)
     except Exception as e:
         click.echo(f"❌ An error occurred: {e}")
+        sys.exit(1)

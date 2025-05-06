@@ -1,4 +1,5 @@
 from subprocess import run
+import sys
 import click
 import yaml
 from ftf_cli.utils import (
@@ -59,7 +60,7 @@ def add_variable(name, type, description, options, required, default, path, patt
             click.echo(
                 "❌ Terraform is not installed. Please install Terraform to continue."
             )
-            return
+            sys.exit(1)
 
         yaml_path = validate_facets_yaml(path)
         variables_tf_path = validate_variables_tf(path)
@@ -203,6 +204,7 @@ def add_variable(name, type, description, options, required, default, path, patt
 
     except click.UsageError as ue:
         click.echo(ue.message)
+        sys.exit(1)
 
 
 def check_and_raise_execption(
