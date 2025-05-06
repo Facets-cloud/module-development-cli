@@ -8,7 +8,6 @@ import click
 import hcl2
 import requests
 
-
 ALLOWED_TYPES = ['string', 'number', 'boolean', 'enum']
 
 
@@ -259,8 +258,13 @@ yaml_schema = {
                 "primary": {
                     "type": "object",
                     "properties": {
-                        "attribute_path": {"type": "string"},
-                        "artifact_type": {"type": "string", "enum": ["docker_image"]
+                        "attribute_path": {
+                            "type": "string",
+                            "pattern": "^spec\.[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)*$"
+                        },
+                        "artifact_type": {
+                            "type": "string",
+                            "enum": ["docker_image", "freestyle"]
                         }
                     },
                     "required": ["attribute_path", "artifact_type"]
