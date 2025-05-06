@@ -203,7 +203,10 @@ yaml_schema = {
         "description": {"type": "string"},
         "clouds": {
             "type": "array",
-            "items": {"type": "string"}
+            "items": {
+                "type": "string",
+                "enum": ["aws", "azure", "gcp", "kubernetes"]
+            }
         },
         "spec": jsonschema.Draft7Validator.META_SCHEMA,
         "outputs": {
@@ -251,7 +254,16 @@ yaml_schema = {
                 }
             }
         },
-        "sample": {"type": "object"},
+        "sample": {
+            "type": "object",
+            "properties": {
+                "kind": {"type": "string"},
+                "flavor": {"type": "string"},
+                "version": {"type": "string"},
+                "spec": {"type": "object"}
+            },
+            "required": ["kind", "flavor", "version", "spec"]
+        },
         "artifact_inputs": {
             "type": "object",
             "properties": {
@@ -274,7 +286,7 @@ yaml_schema = {
         },
         "metadata": jsonschema.Draft7Validator.META_SCHEMA
     },
-    "required": ["intent", "flavor", "version", "description", "spec"]
+    "required": ["intent", "flavor", "version", "description", "spec", "clouds"]
 }
 
 
