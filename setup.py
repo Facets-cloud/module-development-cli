@@ -14,6 +14,7 @@ setup(
         'requests',
         'questionary',
         'python-hcl2 @ git+https://github.com/Facets-cloud/python-hcl2.git@main',
+        'ruamel.yaml',
     ],
     entry_points='''
         [console_scripts]
