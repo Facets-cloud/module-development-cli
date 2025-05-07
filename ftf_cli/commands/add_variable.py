@@ -37,7 +37,6 @@ from ruamel.yaml import YAML
 )
 @click.option(
     "--options",
-    prompt="If type is enum add comma separated values",
     default="",
     help="For enums, offer aggregate option hierarchy.",
 )
@@ -69,6 +68,16 @@ def add_variable(name, type, description, options, required, default, path, patt
             raise click.UsageError(
                 f"❌ Type '{type}' is not allowed. Must be one of: {', '.join(ALLOWED_TYPES)}."
             )
+        
+        if type == "enum" and not options:
+            options = click.prompt(
+                "Type is set to 'enum'. Please provide comma-separated values for options",
+                type=str,
+            )
+            
+        if type == "enum":
+            if not options:
+                raise click.UsageError("❌ Options must be specified for enum type.")
 
         # Validate default value based on type
         if default is not None:
@@ -91,8 +100,6 @@ def add_variable(name, type, description, options, required, default, path, patt
         }
 
         if type == "enum":
-            if not options:
-                raise click.UsageError("❌ Options must be specified for enum type.")
             variable_schema["enum"] = options.split(",")
 
         if default is not None:
@@ -167,12 +174,12 @@ def add_variable(name, type, description, options, required, default, path, patt
                     keys
                 ):
                     sub_data[key] = {"type": "object", "properties": {}}
-                    check_and_raise_execption(
-                        sub_data[key], "patternProperties", "properties", key
-                    )
                     tail = sub_data
                     sub_data = sub_data[key]["properties"]
                 elif index + 1 < len(keys):
+                    check_and_raise_execption(
+                        sub_data[key], "patternProperties", "properties", key
+                    )
                     tail = sub_data
                     sub_data = sub_data[key]["properties"]
 
