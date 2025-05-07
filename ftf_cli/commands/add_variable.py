@@ -17,7 +17,7 @@ from ruamel.yaml import YAML
 @click.option(
     "-n",
     "--name",
-    prompt="Variable Name (dot-separated for nested)",
+    prompt="Variable Name (dot-separated for nested and * for dynamic keys).",
     type=str,
     help="Name allowing nested dot-separated variants. Use '*' for dynamic keys where you want to use regex and pass the regex using --pattern flag For example: 'my_var.*.key'.",
 )
@@ -47,7 +47,7 @@ from ruamel.yaml import YAML
     "--pattern",
     type=str,
     default=None,
-    help='Provide comma separated regex for pattern properties. Eg: \'"^[a-z]+$","^[a-zA-Z0-9._-]+$"\'',
+    help='Provide comma separated regex for pattern properties. Number of wildcard keys and patterns must match. Eg: \'"^[a-z]+$","^[a-zA-Z0-9._-]+$"\'',
 )
 @click.argument("path", type=click.Path(exists=True))
 def add_variable(name, type, description, options, required, default, path, pattern):
@@ -68,13 +68,13 @@ def add_variable(name, type, description, options, required, default, path, patt
             raise click.UsageError(
                 f"❌ Type '{type}' is not allowed. Must be one of: {', '.join(ALLOWED_TYPES)}."
             )
-        
+
         if type == "enum" and not options:
             options = click.prompt(
                 "Type is set to 'enum'. Please provide comma-separated values for options",
                 type=str,
             )
-            
+
         if type == "enum":
             if not options:
                 raise click.UsageError("❌ Options must be specified for enum type.")
@@ -119,6 +119,11 @@ def add_variable(name, type, description, options, required, default, path, patt
                 )
 
         wildcard_keys = [i for i in keys if i == "*"]
+        if pattern is None and len(wildcard_keys) > 0:
+            pattern = click.prompt(
+                'Pattern for dynamic keys (comma-separated regex). Number of wildcard keys and patterns must match. Eg: "^[a-z]+$","^[a-zA-Z0-9._-]+$"',
+                type=str,
+            )
         patterns = pattern.split(",") if pattern else []
 
         if len(wildcard_keys) != len(patterns):
@@ -169,19 +174,16 @@ def add_variable(name, type, description, options, required, default, path, patt
                 sub_data = sub_data[pattern_key]
                 tail = sub_data
                 sub_data = sub_data["properties"]
-            else:
-                if (key not in sub_data or sub_data[key] is None) and index + 1 < len(
-                    keys
-                ):
+                
+            elif index + 1 < len(keys):
+                if key not in sub_data or sub_data[key] is None:
                     sub_data[key] = {"type": "object", "properties": {}}
-                    tail = sub_data
-                    sub_data = sub_data[key]["properties"]
-                elif index + 1 < len(keys):
+                else:
                     check_and_raise_execption(
                         sub_data[key], "patternProperties", "properties", key
                     )
-                    tail = sub_data
-                    sub_data = sub_data[key]["properties"]
+                tail = sub_data[key]
+                sub_data = sub_data[key]["properties"]
 
         if required:
             tail["required"] = tail.get("required", [])
