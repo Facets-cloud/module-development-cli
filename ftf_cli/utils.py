@@ -310,22 +310,12 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
                 )
             if "patternProperties" in value:
                 pp = value["patternProperties"]
-                if "keyPattern" in pp:
-                    pattern_type = pp.get("type")
+                for pattern_key, pp_val in pp.items():
+                    pattern_type = pp_val.get("type")
                     if not isinstance(pattern_type, str) or pattern_type != "object":
                         raise click.UsageError(
-                            f"patternProperties at {path}.{key} with keyPattern must be of type object."
+                            f'patternProperties at {path}.{key} with pattern "{pattern_key}" must be of type object.'
                         )
-                else:
-                    for pattern_key, pp_val in pp.items():
-                        pattern_type = pp_val.get("type")
-                        if (
-                            not isinstance(pattern_type, str)
-                            or pattern_type != "object"
-                        ):
-                            raise click.UsageError(
-                                f'patternProperties at {path}.{key} with pattern "{pattern_key}" must be of type object.'
-                            )
             check_no_array_or_invalid_pattern_in_spec(value, path=f"{path}.{key}")
 
 

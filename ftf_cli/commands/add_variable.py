@@ -174,7 +174,7 @@ def add_variable(name, type, description, options, required, default, path, patt
                 sub_data = sub_data[pattern_key]
                 tail = sub_data
                 sub_data = sub_data["properties"]
-                
+
             elif index + 1 < len(keys):
                 if key not in sub_data or sub_data[key] is None:
                     sub_data[key] = {"type": "object", "properties": {}}
