@@ -1,6 +1,7 @@
 import json
 import re
 from subprocess import run
+import sys
 import traceback
 import click
 import os
@@ -8,7 +9,11 @@ import os
 import hcl
 import requests
 import yaml
-from ftf_cli.utils import is_logged_in, transform_output_tree
+from ftf_cli.utils import (
+    is_logged_in,
+    transform_output_tree,
+    ensure_formatting_for_object,
+)
 from lark import Token, Tree
 
 
@@ -55,7 +60,7 @@ def add_input(path, profile, name, display_name, description, output_type):
         click.echo(
             "❌ Terraform is not installed. Please install Terraform to continue."
         )
-        return
+        sys.exit(1)
 
     # validate if facets.yaml and variables.tf exists
     facets_yaml = os.path.join(path, "facets.yaml")
@@ -64,7 +69,7 @@ def add_input(path, profile, name, display_name, description, output_type):
         click.echo(
             f"❌ {variable_file} or {facets_yaml} not found. Run validate directory command to validate directory."
         )
-        return
+        sys.exit(1)
     try:
 
         with open(facets_yaml, "r") as file:
@@ -108,7 +113,7 @@ def add_input(path, profile, name, display_name, description, output_type):
         credentials = is_logged_in(profile)
         if not credentials:
             click.echo(f"❌ Not logged in under profile {profile}. Please login first.")
-            return
+            sys.exit(1)
 
         # Extract credentials
         control_plane_url = credentials["control_plane_url"]
@@ -129,7 +134,7 @@ def add_input(path, profile, name, display_name, description, output_type):
                 click.echo(
                     f"❌ {output} not found in registered outputs. Please select a valid output type from {registered_output_names}."
                 )
-                return
+                sys.exit(1)
 
         # get output tree for each output
         output_trees = {}
@@ -150,7 +155,7 @@ def add_input(path, profile, name, display_name, description, output_type):
 
         # write facets yaml data to file
         with open(facets_yaml, "w") as file:
-            yaml.dump(facets_data, file)
+            yaml.dump(facets_data, file, sort_keys=False)
             file.close()
 
         click.echo(f"✅ Input added to the {facets_yaml}.")
@@ -158,6 +163,7 @@ def add_input(path, profile, name, display_name, description, output_type):
     except Exception as e:
         click.echo(f"❌ Error encounter while adding input {name}: {e}")
         traceback.print_exc()
+        sys.exit(1)
 
 
 def generate_inputs_variable(output_trees):
@@ -249,28 +255,3 @@ def replace_inputs_variable(file_path, new_inputs_block):
         new_content = hcl.writes(body_node)
         file.write(new_content)
         file.close()
-
-
-def ensure_formatting_for_object(file_path):
-    """Ensure there is a newline after 'object({' in the Terraform file."""
-    with open(file_path, "r") as file:
-        lines = file.readlines()
-
-    updated_lines = []
-    for line in lines:
-        if "object({" in line or ")}" in line:
-            # Add a newline after 'object({'
-            line = line.replace("object({", "object({\n", -1)
-            line = line.replace("})", "})\n", -1)
-            line = line.replace("})\n,", "}),\n", -1)
-            # make sure only one newline is added in the end
-            line = line.rstrip() + "\n"
-            updated_lines.append(line)
-        else:
-            updated_lines.append(line)
-
-    with open(file_path, "w") as file:
-        file.writelines(updated_lines)
-
-    with open(os.devnull, "w") as devnull:
-        run(["terraform", "fmt", file_path], stdout=devnull, stderr=devnull)

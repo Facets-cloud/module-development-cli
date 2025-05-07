@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import traceback
 import click
 import requests
@@ -48,7 +49,7 @@ def delete_module(intent, flavor, version, profile, stage):
         credentials = is_logged_in(profile)
         if not credentials:
             click.echo(f"❌ Not logged in under profile {profile}. Please login first.")
-            return
+            sys.exit(1)
 
         # Extract credentials
         control_plane_url = credentials["control_plane_url"]
@@ -86,7 +87,7 @@ def delete_module(intent, flavor, version, profile, stage):
             click.echo(
                 f"❌ Module with intent {intent} flavor {flavor} version {version} not found."
             )
-            return
+            sys.exit(1)
 
         delete_response = requests.delete(
             f"{control_plane_url}/cc-ui/v1/modules/{module_id}",
@@ -104,6 +105,7 @@ def delete_module(intent, flavor, version, profile, stage):
 
     except Exception as e:
         click.echo(
-            f"❌ Error encounter while deleting module with intent {intent} flavor {flavor} version {version}: {e}"
+            f"❌ Error encountered while deleting module with intent {intent} flavor {flavor} version {version}: {e}"
         )
         traceback.print_exc()
+        sys.exit(1)
