@@ -22,6 +22,12 @@ from ruamel.yaml import YAML
     help="Name allowing nested dot-separated variants. Use '*' for dynamic keys where you want to use regex and pass the regex using --pattern flag For example: 'my_var.*.key'.",
 )
 @click.option(
+    "--title",
+    prompt="Title for the variable in facets.yaml.",
+    type=str,
+    help="Title for the variable in facets.yaml.",
+)
+@click.option(
     "-t",
     "--type",
     prompt="Variable Type",
@@ -50,7 +56,9 @@ from ruamel.yaml import YAML
     help='Provide comma separated regex for pattern properties. Number of wildcard keys and patterns must match. Eg: \'"^[a-z]+$","^[a-zA-Z0-9._-]+$"\'',
 )
 @click.argument("path", type=click.Path(exists=True))
-def add_variable(name, type, description, options, required, default, path, pattern):
+def add_variable(
+    name, title, type, description, options, required, default, path, pattern
+):
     """Add a new variable to the module."""
     try:
         yaml = YAML()
@@ -95,8 +103,9 @@ def add_variable(name, type, description, options, required, default, path, patt
                 )
 
         variable_schema = {
-            "type": "string" if type == "enum" else type,
+            "title": title,
             "description": description,
+            "type": "string" if type == "enum" else type,
         }
 
         if type == "enum":
@@ -155,6 +164,8 @@ def add_variable(name, type, description, options, required, default, path, patt
                     sub_data[key], "properties", "patternProperties", key
                 )
 
+                prompt_for_title_and_description(key, sub_data[key])
+
                 tail = sub_data
                 sub_data = sub_data[key]["patternProperties"]
                 continue
@@ -172,6 +183,7 @@ def add_variable(name, type, description, options, required, default, path, patt
                     old_value if old_value else {"type": "object", "properties": {}}
                 )
                 sub_data = sub_data[pattern_key]
+                prompt_for_title_and_description(pattern_key, sub_data)
                 tail = sub_data
                 sub_data = sub_data["properties"]
 
@@ -182,6 +194,7 @@ def add_variable(name, type, description, options, required, default, path, patt
                     check_and_raise_execption(
                         sub_data[key], "patternProperties", "properties", key
                     )
+                prompt_for_title_and_description(key, sub_data[key])
                 tail = sub_data[key]
                 sub_data = sub_data[key]["properties"]
 
@@ -224,3 +237,28 @@ def check_and_raise_execption(
         raise click.UsageError(
             f"❌ facets.yaml already has {key_to_check} defined in {parent}. Cannot add {key_to_be_added} at the same level."
         )
+
+
+def prompt_for_title_and_description(key: str, object: dict):
+    if "title" not in object:
+        title = click.prompt(
+            f"Title for key {key} not found. Please provide a title",
+            type=str,
+        )
+        if title == "" or title is None:
+            raise click.UsageError(
+                f"❌ Title for key {key} cannot be empty. Please provide a valid title."
+            )
+
+        object["title"] = title
+    if "description" not in object:
+        description = click.prompt(
+            f"Description for key {key} not found. Please provide a description",
+            type=str,
+        )
+        if description == "" or description is None:
+            raise click.UsageError(
+                f"❌ Description for key {key} cannot be empty. Please provide a valid description."
+            )
+
+        object["description"] = description

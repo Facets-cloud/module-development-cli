@@ -106,6 +106,7 @@ ftf add-variable [OPTIONS] /path/to/module
 
 **Options**:
 - `-n, --name`: (prompt) Name allowing nested dot-separated variants. Use * for dynamic keys where you want to use regex and pass the regex using --pattern flag For example: 'my_var.*.key'.
+- `--title`: (prompt) Title for the variable in facets.yaml.
 - `-t, --type`: (prompt) Variable type, supports basic JSON schema types like string, number, boolean, enum.
 - `-d, --description`: (prompt) A descriptive text explaining the variable.
 - `--options`: (prompt) Comma-separated options used if the variable type is enum.
