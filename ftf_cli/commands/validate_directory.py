@@ -2,7 +2,7 @@ import os
 import sys
 import click
 from subprocess import run, CalledProcessError
-from ftf_cli.utils import validate_facets_yaml, validate_boolean
+from ftf_cli.utils import validate_facets_yaml, validate_boolean, validate_facets_tf_vars
 from checkov.runner_filter import RunnerFilter
 from checkov.terraform.runner import Runner
 
@@ -28,6 +28,7 @@ def validate_directory(path, check_only, skip_terraform_validation):
         # Run terraform fmt in check mode if check-only flag is present
         fmt_command = ["terraform", "fmt", "-check"] if check_only else ["terraform", "fmt"]
         run(fmt_command, cwd=path, check=True)
+        validate_facets_tf_vars(path)
         click.echo("✅ Terraform files are correctly formatted." if check_only else "🎨 Terraform files formatted.")
 
         if not skip_terraform_validation:
