@@ -34,7 +34,7 @@ def validate_facets_yaml(path, filename="facets.yaml"):
 
 
 def generate_output_tree(obj):
-    """ Generate a JSON schema from a outputs.tf file. """
+    """Generate a JSON schema from a outputs.tf file."""
     if isinstance(obj, dict):
         transformed = {}
         for key, value in obj.items():
@@ -208,10 +208,7 @@ yaml_schema = {
         "description": {"type": "string"},
         "clouds": {
             "type": "array",
-            "items": {
-                "type": "string",
-                "enum": ["aws", "azure", "gcp", "kubernetes"]
-            }
+            "items": {"type": "string", "enum": ["aws", "azure", "gcp", "kubernetes"]},
         },
         "spec": jsonschema.Draft7Validator.META_SCHEMA,
         "outputs": {
@@ -250,10 +247,7 @@ yaml_schema = {
                     "type": "object",
                     "properties": {
                         "type": {"type": "string", "pattern": "^@outputs?/.+"},
-                        "providers": {
-                            "type": "array",
-                            "items": {"type": "string"}
-                        }
+                        "providers": {"type": "array", "items": {"type": "string"}},
                     },
                     "required": ["type"],
                 }
@@ -265,9 +259,9 @@ yaml_schema = {
                 "kind": {"type": "string"},
                 "flavor": {"type": "string"},
                 "version": {"type": "string"},
-                "spec": {"type": "object"}
+                "spec": {"type": "object"},
             },
-            "required": ["kind", "flavor", "version", "spec"]
+            "required": ["kind", "flavor", "version", "spec"],
         },
         "artifact_inputs": {
             "type": "object",
@@ -277,12 +271,12 @@ yaml_schema = {
                     "properties": {
                         "attribute_path": {
                             "type": "string",
-                            "pattern": "^spec\.[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)*$"
+                            "pattern": "^spec\.[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)*$",
                         },
                         "artifact_type": {
                             "type": "string",
-                            "enum": ["docker_image", "freestyle"]
-                        }
+                            "enum": ["docker_image", "freestyle"],
+                        },
                     },
                     "required": ["attribute_path", "artifact_type"],
                 }
@@ -291,7 +285,7 @@ yaml_schema = {
         },
         "metadata": jsonschema.Draft7Validator.META_SCHEMA,
     },
-    "required": ["intent", "flavor", "version", "description", "spec", "clouds"]
+    "required": ["intent", "flavor", "version", "description", "spec", "clouds"],
 }
 
 
