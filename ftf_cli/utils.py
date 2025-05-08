@@ -7,6 +7,7 @@ from jsonschema import validate, Draft7Validator
 import click
 import hcl2
 import requests
+import glob
 
 
 ALLOWED_TYPES = ['string', 'number', 'boolean', 'enum']
@@ -412,6 +413,95 @@ def update_facets_yaml_imports(yaml_path, import_config, mode="interactive"):
     except Exception as e:
         click.echo(f"❌ Error updating facets.yaml: {e}")
         return False
+
+
+def discover_resources(path: str) -> list[dict]:
+    """Discover all Terraform resources in the module directory.
+
+    Args:
+        path: Path to the module directory
+
+    Returns:
+        List of discovered resources with their metadata
+    """
+    resources = []
+    tf_files = glob.glob(os.path.join(path, "*.tf"))
+    seen_resources = set()
+    for tf_file in tf_files:
+        try:
+            with open(tf_file, "r") as file:
+                content = hcl2.load(file)
+            if "resource" in content:
+                for resource_block in content["resource"]:
+                    for resource_type, resources_of_type in resource_block.items():
+                        if resource_type.startswith("__") and resource_type.endswith(
+                            "__"
+                        ):
+                            continue
+                        for resource_name, resource_config in resources_of_type.items():
+                            if resource_name.startswith(
+                                "__"
+                            ) and resource_name.endswith("__"):
+                                continue
+                            resource_address = f"{resource_type}.{resource_name}"
+                            if resource_address in seen_resources:
+                                continue
+                            seen_resources.add(resource_address)
+                            has_count = False
+                            has_for_each = False
+                            count_value = None
+                            for_each_value = None
+                            if isinstance(resource_config, dict):
+                                if "count" in resource_config:
+                                    has_count = True
+                                    count_value = resource_config["count"]
+                                if "for_each" in resource_config:
+                                    has_for_each = True
+                                    for_each_value = resource_config["for_each"]
+                            elif isinstance(resource_config, list) and resource_config:
+                                first_item = resource_config[0]
+                                if isinstance(first_item, dict):
+                                    if "count" in first_item:
+                                        has_count = True
+                                        count_value = first_item["count"]
+                                    if "for_each" in first_item:
+                                        has_for_each = True
+                                        for_each_value = first_item["for_each"]
+                            if has_count:
+                                resources.append(
+                                    {
+                                        "address": f"{resource_address}",
+                                        "display": f"{resource_address} (with count)",
+                                        "indexed": True,
+                                        "index_type": "count",
+                                        "value": count_value,
+                                        "source_file": os.path.basename(tf_file),
+                                    }
+                                )
+                            elif has_for_each:
+                                resources.append(
+                                    {
+                                        "address": f"{resource_address}",
+                                        "display": f"{resource_address} (with for_each)",
+                                        "indexed": True,
+                                        "index_type": "for_each",
+                                        "value": for_each_value,
+                                        "source_file": os.path.basename(tf_file),
+                                    }
+                                )
+                            else:
+                                resources.append(
+                                    {
+                                        "address": resource_address,
+                                        "display": resource_address,
+                                        "indexed": False,
+                                        "source_file": os.path.basename(tf_file),
+                                    }
+                                )
+        except Exception as e:
+            click.echo(f"⚠️ Could not parse {tf_file}: {e}")
+            click.echo(f"Error details: {str(e)}")
+    return sorted(resources, key=lambda r: r["address"])
 
 
 if __name__ == "__main__":

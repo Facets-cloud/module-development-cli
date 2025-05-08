@@ -1,12 +1,14 @@
-import click
-import yaml
 import os
-import questionary
-import glob
-import hcl2
 import re
 from typing import Dict, List, Optional, Union, Any, Tuple
-from ftf_cli.utils import validate_facets_yaml, update_facets_yaml_imports
+import click
+import questionary
+import yaml
+from ftf_cli.utils import (
+    validate_facets_yaml,
+    update_facets_yaml_imports,
+    discover_resources,
+)
 
 
 @click.command()
@@ -35,11 +37,6 @@ from ftf_cli.utils import validate_facets_yaml, update_facets_yaml_imports
     "--key",
     help="The key for resources with 'for_each' meta-argument (e.g., 'my-key' or '*' for all). Only used when the selected resource has 'for_each'.",
 )
-@click.option(
-    "--non-interactive",
-    is_flag=True,
-    help="Run in non-interactive mode. Will use provided options and fail if required options are missing.",
-)
 def add_import(
     path: str,
     name: Optional[str] = None,
@@ -47,7 +44,6 @@ def add_import(
     resource: Optional[str] = None,
     index: Optional[str] = None,
     key: Optional[str] = None,
-    non_interactive: bool = False,
 ) -> None:
     """Add an import declaration to the module.
 
@@ -84,6 +80,39 @@ def add_import(
             return
 
         click.echo(f"Found {len(resources)} resources.")
+
+        # Determine if all required arguments are provided for non-interactive mode
+        non_interactive = False
+        if name is not None and resource is not None:
+            # Find the selected resource to check if index/key is needed
+            selected_resource = None
+            for r in resources:
+                if r["address"] == resource:
+                    selected_resource = r
+                    break
+            if selected_resource:
+                if selected_resource.get("indexed"):
+                    if (
+                        selected_resource.get("index_type") == "count"
+                        and index is not None
+                    ):
+                        non_interactive = True
+                    elif (
+                        selected_resource.get("index_type") == "for_each"
+                        and key is not None
+                    ):
+                        non_interactive = True
+                    elif selected_resource.get("index_type") not in (
+                        "count",
+                        "for_each",
+                    ):
+                        non_interactive = True
+                else:
+                    non_interactive = True
+            else:
+                # If resource not found, fallback to interactive
+                non_interactive = False
+        # If not all required args, non_interactive remains False
 
         # Handle resource selection
         selected_resource = select_resource_by_options(
@@ -173,121 +202,6 @@ def select_resource_by_options(
             )
             return None
         return select_resource(resources)
-
-
-def discover_resources(path: str) -> List[Dict[str, Any]]:
-    """Discover all Terraform resources in the module directory.
-
-    Args:
-        path: Path to the module directory
-
-    Returns:
-        List of discovered resources with their metadata
-    """
-    resources = []
-
-    # Find all .tf files in the module directory
-    tf_files = glob.glob(os.path.join(path, "*.tf"))
-
-    # Track resource addresses to avoid duplicates
-    seen_resources = set()
-
-    for tf_file in tf_files:
-        try:
-            with open(tf_file, "r") as file:
-                content = hcl2.load(file)
-
-            # Extract resource blocks
-            if "resource" in content:
-                # The resource key contains a list of dictionaries
-                for resource_block in content["resource"]:
-                    # Each resource_block is a dictionary with a single key (resource type)
-                    for resource_type, resources_of_type in resource_block.items():
-                        # Skip metadata fields
-                        if resource_type.startswith("__") and resource_type.endswith(
-                            "__"
-                        ):
-                            continue
-
-                        # resources_of_type is a dictionary with resource names as keys
-                        for resource_name, resource_config in resources_of_type.items():
-                            # Skip metadata fields
-                            if resource_name.startswith(
-                                "__"
-                            ) and resource_name.endswith("__"):
-                                continue
-
-                            resource_address = f"{resource_type}.{resource_name}"
-
-                            # Skip if we've already seen this resource
-                            if resource_address in seen_resources:
-                                continue
-
-                            seen_resources.add(resource_address)
-
-                            # Check for count or for_each
-                            has_count = False
-                            has_for_each = False
-                            count_value = None
-                            for_each_value = None
-
-                            # Handle different ways count/for_each might be represented
-                            if isinstance(resource_config, dict):
-                                if "count" in resource_config:
-                                    has_count = True
-                                    count_value = resource_config["count"]
-                                if "for_each" in resource_config:
-                                    has_for_each = True
-                                    for_each_value = resource_config["for_each"]
-                            elif isinstance(resource_config, list) and resource_config:
-                                # If it's a list, check the first item (common HCL2 pattern)
-                                first_item = resource_config[0]
-                                if isinstance(first_item, dict):
-                                    if "count" in first_item:
-                                        has_count = True
-                                        count_value = first_item["count"]
-                                    if "for_each" in first_item:
-                                        has_for_each = True
-                                        for_each_value = first_item["for_each"]
-
-                            # Add the resource with appropriate metadata
-                            if has_count:
-                                resources.append(
-                                    {
-                                        "address": f"{resource_address}",
-                                        "display": f"{resource_address} (with count)",
-                                        "indexed": True,
-                                        "index_type": "count",
-                                        "value": count_value,
-                                        "source_file": os.path.basename(tf_file),
-                                    }
-                                )
-                            elif has_for_each:
-                                resources.append(
-                                    {
-                                        "address": f"{resource_address}",
-                                        "display": f"{resource_address} (with for_each)",
-                                        "indexed": True,
-                                        "index_type": "for_each",
-                                        "value": for_each_value,
-                                        "source_file": os.path.basename(tf_file),
-                                    }
-                                )
-                            else:
-                                resources.append(
-                                    {
-                                        "address": resource_address,
-                                        "display": resource_address,
-                                        "indexed": False,
-                                        "source_file": os.path.basename(tf_file),
-                                    }
-                                )
-        except Exception as e:
-            click.echo(f"⚠️ Could not parse {tf_file}: {e}")
-            click.echo(f"Error details: {str(e)}")
-
-    # Sort resources by address for better display
-    return sorted(resources, key=lambda r: r["address"])
 
 
 def select_resource(resources: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:

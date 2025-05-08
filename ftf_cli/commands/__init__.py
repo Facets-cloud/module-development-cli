@@ -10,6 +10,7 @@ from .get_output_types import get_output_types
 from .get_output_details import get_output_lookup_tree
 from .register_output_type import register_output_type
 from .add_import import add_import
+from .get_resources import get_resources
 
 # Newly added command import
 
@@ -26,4 +27,5 @@ __all__ = [
     "login",
     "preview_module",
     "validate_directory",
+    "get_resources",
 ]
