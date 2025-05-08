@@ -229,7 +229,6 @@ Automatically discovers resources in the module and prompts for selecting a reso
 - `--resource`: The Terraform resource address to import (e.g., 'aws_s3_bucket.bucket').
 - `--index`: For resources with 'count', specify the index (e.g., '0', '1', or '*' for all).
 - `--key`: For resources with 'for_each', specify the key (e.g., 'my-key' or '*' for all).
-- `--non-interactive`: Run in non-interactive mode. Requires --resource and --name options.
 
 **Examples**:
 ```bash
@@ -237,13 +236,16 @@ Automatically discovers resources in the module and prompts for selecting a reso
 ftf add-import /path/to/module
 
 # Non-interactive mode for regular resource
-ftf add-import /path/to/module --name key_vault --resource azurerm_key_vault.key_vault --non-interactive
+ftf add-import /path/to/module --name key_vault --resource azurerm_key_vault.key_vault
 
 # Non-interactive mode for count resource
-ftf add-import /path/to/module --name count_vault --resource azurerm_key_vault.count_key_vault --index 1 --non-interactive
+ftf add-import /path/to/module --name count_vault --resource azurerm_key_vault.count_key_vault --index 1
 
 # Non-interactive mode for for_each resource
-ftf add-import /path/to/module --name for_each_vault --resource azurerm_key_vault.for_each_key_vault --key my-key --non-interactive
+ftf add-import /path/to/module --name for_each_vault --resource azurerm_key_vault.for_each_key_vault --key my-key
+
+# Non-interactive mode with full resource state address
+ftf add-import /path/to/module --name for_each_vault --resource-address azurerm_key_vault.for_each_key_vault[0]
 ```
 
 **Notes**:

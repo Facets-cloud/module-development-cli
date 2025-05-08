@@ -37,6 +37,10 @@ from ftf_cli.utils import (
     "--key",
     help="The key for resources with 'for_each' meta-argument (e.g., 'my-key' or '*' for all). Only used when the selected resource has 'for_each'.",
 )
+@click.option(
+    "--resource-address",
+    help="The full resource address to import (e.g., 'azurerm_key_vault.for_each_key_vault[0]'). If provided, runs in non-interactive mode and skips resource discovery.",
+)
 def add_import(
     path: str,
     name: Optional[str] = None,
@@ -44,6 +48,7 @@ def add_import(
     resource: Optional[str] = None,
     index: Optional[str] = None,
     key: Optional[str] = None,
+    resource_address: Optional[str] = None,
 ) -> None:
     """Add an import declaration to the module.
 
@@ -55,7 +60,7 @@ def add_import(
     resources with count and for_each meta-arguments.
 
     Can be run in interactive or non-interactive mode. In non-interactive mode,
-    you must provide --resource and --name options.
+    you must provide --resource and --name options, or --resource-address and --name.
     """
     try:
         # Check if facets.yaml exists
@@ -64,11 +69,41 @@ def add_import(
             click.echo(f"❌ facets.yaml not found at {facets_yaml_path}")
             return
 
+        # Enforce that name is required in all scenarios
+        if name is None:
+            click.echo("❌ Import name is required. Use --name option.")
+            return
+
         # Validate facets.yaml format
         try:
             validate_facets_yaml(path)
         except click.UsageError as e:
             click.echo(f"❌ {e}")
+            return
+
+        # If resource_address is provided, skip resource discovery and run in non-interactive mode
+        if resource_address is not None:
+            if name is None:
+                click.echo(
+                    "❌ Import name is required when using --resource-address. Use --name option."
+                )
+                return
+            import_config = {
+                "name": name,
+                "resource_address": resource_address,
+                "required": required if required is not None else True,
+            }
+            if not validate_import_config(import_config):
+                click.echo("❌ Invalid import configuration. Aborting.")
+                return
+            result = update_facets_yaml_non_interactive(facets_yaml_path, import_config)
+            if result:
+                click.echo(
+                    f"✅ Import declaration {'added to' if result == True else 'updated in'} facets.yaml:"
+                )
+                click.echo(f"   name: {import_config['name']}")
+                click.echo(f"   resource_address: {import_config['resource_address']}")
+                click.echo(f"   required: {str(import_config['required']).lower()}")
             return
 
         # Discover resources in the module
