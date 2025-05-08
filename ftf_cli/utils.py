@@ -10,6 +10,7 @@ import hcl2
 import requests
 import hcl
 import glob
+import re
 
 
 ALLOWED_TYPES = ["string", "number", "boolean", "enum"]
@@ -315,7 +316,7 @@ yaml_schema = {
                     "properties": {
                         "attribute_path": {
                             "type": "string",
-                            "pattern": "^spec\.[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)*$",
+                            "pattern": r"^spec\.[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*$",
                         },
                         "artifact_type": {
                             "type": "string",
@@ -597,7 +598,8 @@ def update_facets_yaml_imports(yaml_path, import_config, mode="interactive"):
                 if mode == "non-interactive":
                     # In non-interactive mode, always overwrite
                     click.echo(
-                        f"⚠️ Overwriting existing import with name '{import_config['name']}'")
+                        f"⚠️ Overwriting existing import with name '{import_config['name']}'"
+                    )
                     facets_data["imports"][i] = import_config
                     result = "updated"
                 else:
@@ -626,7 +628,8 @@ def update_facets_yaml_imports(yaml_path, import_config, mode="interactive"):
             # Find the imports section and replace it
             import_pattern = r"imports:.*?(?=\n\w+:|$)"
             new_content = re.sub(
-                import_pattern, imports_yaml.rstrip(), original_content, flags=re.DOTALL)
+                import_pattern, imports_yaml.rstrip(), original_content, flags=re.DOTALL
+            )
         else:
             # Otherwise add the imports section at the end
             new_content = original_content.rstrip() + "\n" + imports_yaml
