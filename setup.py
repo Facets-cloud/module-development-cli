@@ -15,9 +15,19 @@ setup(
         'questionary',
         'python-hcl2 @ git+https://github.com/Facets-cloud/python-hcl2.git@main',
         'ruamel.yaml',
+        'hcl',
+        'lark',
     ],
+    extras_require={
+        'dev': [
+            'pytest>=8.3.5',
+            'pytest-mock',
+            'pyhcl>=0.4.5',
+        ],
+    },
     entry_points='''
         [console_scripts]
         ftf=ftf_cli.cli:cli
     ''',
+    python_requires='>=3.9',
 )
