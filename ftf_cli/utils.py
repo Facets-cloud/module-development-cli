@@ -70,7 +70,7 @@ def validate_facets_tf_vars(path, filename="variables.tf"):
                     required_tf_facets_vars.remove(var_name)
                 else:
                     not_allowed_variables.append(var_name)
-        
+
         if len(required_tf_facets_vars) > 0:
             raise click.UsageError(
                 f"❌ {filename} is missing required variables: {', '.join(required_tf_facets_vars)}"
