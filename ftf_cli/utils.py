@@ -314,7 +314,7 @@ yaml_schema = {
                     "properties": {
                         "attribute_path": {
                             "type": "string",
-                            "pattern": "^spec\.[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)*$",
+                            "pattern": r"^spec\.[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*$",
                         },
                         "artifact_type": {
                             "type": "string",

@@ -26,7 +26,7 @@ To install FTF CLI from source, follow these steps:
 
 #### Prerequisites
 
-- Python 3.6 or later
+- Python 3.8 or later
 - Virtual environment (recommended)
 
 #### Steps
@@ -48,7 +48,7 @@ To install FTF CLI from source, follow these steps:
 3. **Install the package**:
 
    ```bash
-   pip install .
+   pip install -e .[dev]  # Install with development dependencies
    ```
 
 ## Usage
@@ -116,166 +116,4 @@ ftf add-variable [OPTIONS] /path/to/module
 
 **Notes**:
 - Preserves terraform formatting while adding variables.
-- Performs type validation before addition.
-- Nested variables create the necessary nested structure internally.
-
-#### Validate Directory
-
-Perform validation on Terraform directories including formatting checks and security scans using Checkov.
-
-```bash
-ftf validate-directory /path/to/module [OPTIONS]
-```
-
-**Options**:
-- `--check-only`: Only check formatting; does not make any changes.
-
-**Notes**:
-- Runs `terraform fmt` for formatting verification.
-- Runs `terraform init` to ensure initialization completeness.
-- Uses Checkov to scan Terraform files for security misconfigurations.
-- Designed for fast feedback on module quality and security.
-
-#### Login
-
-Authenticate to a control plane and store credentials under a named profile for reuse.
-
-```bash
-ftf login [OPTIONS]
-```
-
-**Options**:
-- `-c, --control-plane-url`: (prompt) Base URL of the control plane API (must start with http:// or https://).
-- `-u, --username`: (prompt) Your login username.
-- `-t, --token`: (prompt) Access token or API token (input is hidden).
-- `-p, --profile`: (prompt) Profile name to save credentials under (default: "default").
-
-**Notes**:
-- URL format is validated before saving.
-- Credentials are verified via the control plane API before storage.
-- Allows switching between multiple profiles/environments.
-
-#### Add Input
-
-Add an existing registered output type as an input to your Terraform module.
-
-```bash
-ftf add-input [OPTIONS] /path/to/module
-```
-
-**Options**:
-- `-p, --profile`: (prompt) Profile to use for control plane authentication (default: "default").
-- `-n, --name`: (prompt) Name of the input variable to add in facets.yaml and variables.tf.
-- `-dn, --display-name`: (prompt) Human-readable display name for the input variable.
-- `-d, --description`: (prompt) Description for the input variable.
-- `-o, --output-type`: (prompt) The type of registered output to wire as input.
-
-**Notes**:
-- Updates facets.yaml required inputs and variables.tf accordingly.
-- Facilitates parametrization of modules using control plane outputs.
-
-#### Preview (and Publish) Module
-
-Preview or register a Terraform module with the control plane from a specified directory.
-
-```bash
-ftf preview-module /path/to/module [OPTIONS]
-```
-
-**Options**:
-- `-p, --profile`: (prompt) Profile to authenticate with (default: "default").
-- `-a, --auto-create-intent`: Automatically create intent in control plane if it doesn't exist.
-- `-f, --publishable`: Marks the module as production-ready and publishable.
-- `-g, --git-repo-url`: Git repository URL where the module source code resides.
-- `-r, --git-ref`: Git ref, branch, or tag for the module version.
-- `--publish`: Flag to publish the module immediately after preview.
-
-**Notes**:
-- Environment variables such as GIT_REPO_URL, GIT_REF, FACETS_PROFILE can be used for automation or CI pipelines.
-- If Git info is absent, module versioning defaults to a local testing version format (e.g. 1.0-{username}).
-
-#### Expose Provider
-
-Expose a Terraform provider as part of the module outputs with configurable name, version, attributes, and output.
-
-```bash
-ftf expose-provider [OPTIONS] /path/to/module
-```
-
-**Options**:
-- `-n, --name`: (prompt) Name to assign to the provider.
-- `-s, --source`: (prompt) Provider source URL or address.
-- `-v, --version`: (prompt) Version constraint for the provider.
-- `-a, --attributes`: (prompt) Comma-separated attributes map with equal sign (e.g., "attribute1=val1,depth.attribute2=val2").
-- `-o, --output`: (prompt) Output block to expose the provider under.
-
-**Notes**:
-- Supports nested attribute keys using dot notation.
-- If no default output exists, one of type intent "default" under facets.yaml will be created.
-
-#### Delete Module
-
-Delete a registered Terraform module from the control plane.
-
-```bash
-ftf delete-module [OPTIONS]
-```
-
-**Options**:
-- `-i, --intent`: (prompt) Intent of the module to delete.
-- `-f, --flavor`: (prompt) Flavor of the module.
-- `-v, --version`: (prompt) Version of the module.
-- `-s, --stage`: (prompt) Deployment stage of the module.
-- `-p, --profile`: (prompt) Authentication profile to use (default: "default").
-
-#### Get Output Types
-
-Retrieve the output types registered in the control plane for the authenticated profile.
-
-```bash
-ftf get-output-types [OPTIONS]
-```
-
-**Options**:
-- `-p, --profile`: (prompt) Profile to authenticate as (default: "default").
-
-#### Get Output Lookup Tree
-
-Retrieve the detailed lookup tree for a registered output type from the control plane.
-
-```bash
-ftf get-output-lookup-tree [OPTIONS]
-```
-
-**Options**:
-- `-o, --output`: (prompt) Name of the output type to query.
-- `-p, --profile`: (prompt) Profile to use for authentication (default: "default").
-
-#### Register Output Type
-
-Register a new output type in the control plane using a YAML definition file.
-
-```bash
-ftf register-output-type YAML_PATH [OPTIONS]
-```
-
-**Arguments**:
-- `YAML_PATH`: Path to the YAML definition file for the output type.
-
-**Options**:
-- `-p, --profile`: Profile name to use, defaults to environment variable FACETS_PROFILE if set, otherwise `default`.
-- `--inferred-from-module`: Flag to mark the output type as inferred from a module.
-
-**Notes**:
-- The YAML file must include `name` and `properties` fields.
-- The name should be in the format `@namespace/name`.
-- You can include a `providers` section in the YAML to specify provider information.
-- Ensures you're logged in before attempting to register the output type.
-
-## Contribution
-
-Feel free to fork the repository and submit pull requests for any feature enhancements or bug fixes.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE.md file for more details.
+- Performs type

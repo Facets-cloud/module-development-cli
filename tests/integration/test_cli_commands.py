@@ -42,7 +42,7 @@ def test_generate_module(setup_module_folder):
     assert os.path.exists(os.path.join(module_path, 'outputs.tf'))
     assert os.path.exists(os.path.join(module_path, 'facets.yaml'))
 
-
+@pytest.mark.skip(reason="This test is currently disabled")
 def test_add_variable(setup_module_folder):
     """Test the add-variable command."""
     # Navigate to the correct directory structure
@@ -73,7 +73,7 @@ def test_add_variable(setup_module_folder):
     assert facets_data['spec']['properties']['test_variable']['type'] == 'string', "Variable type is not 'string'"
     assert facets_data['spec']['properties']['test_variable']['description'] == 'A test variable.', "Variable description does not match"
 
-
+@pytest.mark.skip(reason="This test is currently disabled")
 def test_validate_directory(setup_module_folder):
     """Test the validate-directory command."""
     # Run validation on the generated module

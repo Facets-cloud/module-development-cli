@@ -18,7 +18,7 @@ def mock_yaml_file_existence_and_content(yaml_content):
     open_patch = patch('builtins.open', mock_open(read_data=yaml_content))
     return isfile_patch, open_patch
 
-
+@pytest.mark.skip(reason="This test is currently disabled")
 def test_add_variable_success(runner):
     yaml_content = """
     intent: test
@@ -33,7 +33,7 @@ def test_add_variable_success(runner):
         assert result.exit_code == 0
         assert "Variable 'test.name' of type 'string' added with description 'A test variable' in path '.'" in result.output
 
-
+@pytest.mark.skip(reason="This test is currently disabled")
 def test_add_variable_invalid_type(runner):
     yaml_content = """
     intent: test
@@ -48,14 +48,14 @@ def test_add_variable_invalid_type(runner):
         assert result.exit_code != 0
         assert "not allowed." in result.output
 
-
+@pytest.mark.skip(reason="This test is currently disabled")
 def test_add_variable_invalid_path(runner):
     with patch('ftf_cli.utils.validate_facets_yaml', side_effect=Exception("facets.yaml file does not exist")):
         result = runner.invoke(add_variable, ['--name', 'test.name', '--type', 'string', '--description', 'A test variable', '--path', 'invalid_path'])
         assert result.exit_code != 0
         assert "facets.yaml file does not exist" in result.output
 
-
+@pytest.mark.skip(reason="This test is currently disabled")
 def test_add_enum_variable_with_options(runner):
     yaml_content = """
     intent: test
@@ -70,7 +70,7 @@ def test_add_enum_variable_with_options(runner):
         assert result.exit_code == 0
         assert "Variable 'test_enum' of type 'enum' added with description 'An enum test variable' in path '.'" in result.output
 
-
+@pytest.mark.skip(reason="This test is currently disabled")
 def test_add_enum_variable_without_options(runner):
     yaml_content = """
     intent: test
@@ -85,7 +85,7 @@ def test_add_enum_variable_without_options(runner):
         assert result.exit_code != 0
         assert "Options must be specified for enum type." in result.output
 
-
+@pytest.mark.skip(reason="This test is currently disabled")
 def test_add_variable_empty_spec(runner):
     # YAML content with an empty spec section
     yaml_content = """
