@@ -68,7 +68,7 @@ ifeq ($(OS),Windows)
 	@if not exist env\Scripts\pip ( \
 		echo "Virtual environment not found. Run 'make setup' first." && exit 1 \
 	)
-	$(PYTEST) tests
+	$(ACTIVATE) && $(PYTEST) tests
 else
 	@if [ ! -f "./env/bin/pip" ]; then \
 		echo "Virtual environment not found. Run 'make setup' first." && exit 1; \
@@ -78,28 +78,28 @@ endif
 
 test-unit:
 ifeq ($(OS),Windows)
-	$(PYTEST) tests/test_*.py
+	$(ACTIVATE) && $(PYTEST) tests/test_*.py
 else
 	$(ACTIVATE) && $(PYTEST) tests/test_*.py
 endif
 
 test-commands:
 ifeq ($(OS),Windows)
-	$(PYTEST) tests/commands/
+	$(ACTIVATE) && $(PYTEST) tests/commands/
 else
 	$(ACTIVATE) && $(PYTEST) tests/commands/
 endif
 
 test-integration:
 ifeq ($(OS),Windows)
-	$(PYTEST) tests/integration/
+	$(ACTIVATE) && $(PYTEST) tests/integration/
 else
 	$(ACTIVATE) && $(PYTEST) tests/integration/
 endif
 
 lint:
 ifeq ($(OS),Windows)
-	$(PIP) install flake8 && \
+	$(ACTIVATE) && $(PIP) install flake8 && \
 	env\Scripts\flake8 ftf_cli tests
 else
 	$(ACTIVATE) && pip install flake8 && flake8 ftf_cli tests
@@ -107,7 +107,7 @@ endif
 
 format:
 ifeq ($(OS),Windows)
-	$(PIP) install black && \
+	$(ACTIVATE) && $(PIP) install black && \
 	env\Scripts\black ftf_cli tests
 else
 	$(ACTIVATE) && pip install black && black ftf_cli tests
