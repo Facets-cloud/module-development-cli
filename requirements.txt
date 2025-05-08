@@ -5,7 +5,7 @@ Jinja2>=3.1.6
 git+https://github.com/Facets-cloud/python-hcl2.git
 jsonschema>=4.23.0
 requests>=2.32.3
-checkov>=3.2.416
+checkov==3.2.414
 questionary>=2.1.0
 ruamel.yaml
 hcl>=0.2.1

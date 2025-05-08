@@ -118,19 +118,20 @@ def validate_directory(path, check_only, skip_terraform_validation):
             click.echo("✅ Checkov validation passed.")
 
     except CalledProcessError as e:
+        if e.stdout:
+            for line in e.stdout.splitlines():
+                click.echo(line)
+        if e.stderr:
+            for line in e.stderr.splitlines():
+                click.echo(line)
         if check_only and "fmt" in str(e):
-            click.echo(
-                "❌ Error: Terraform files are not correctly formatted. Please run `terraform fmt` locally to format the files."
+            raise click.UsageError(
+                "❌ Error: Terraform files are not correctly formatted. Please run `terraform fmt` locally to format the files or remove the --check-only flag."
             )
         else:
-            click.echo(f"❌ An error occurred while executing: {e}")
-        raise e
-    except click.UsageError as ue:
-        click.echo(ue.message)
-        raise ue
+            raise click.UsageError(f"❌ An error occurred while executing: {e}")
     except Exception as e:
-        click.echo(f"❌ Validation failed: {e}")
-        raise e
+        raise click.UsageError(f"❌ Validation failed: {e}")
 
 
 if __name__ == "__main__":
