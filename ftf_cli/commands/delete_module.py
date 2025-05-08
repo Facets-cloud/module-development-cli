@@ -1,5 +1,4 @@
 import os
-import sys
 import traceback
 import click
 import requests
@@ -47,8 +46,9 @@ def delete_module(intent, flavor, version, profile, stage):
         click.echo(f"Profile selected: {profile}")
         credentials = is_logged_in(profile)
         if not credentials:
-            click.echo(f"❌ Not logged in under profile {profile}. Please login first.")
-            sys.exit(1)
+            raise click.UsageError(
+                f"❌ Not logged in under profile {profile}. Please login first."
+            )
 
         # Extract credentials
         control_plane_url = credentials["control_plane_url"]
@@ -83,10 +83,9 @@ def delete_module(intent, flavor, version, profile, stage):
                 break
 
         if module_id == -1:
-            click.echo(
+            raise click.UsageError(
                 f"❌ Module with intent {intent} flavor {flavor} version {version} not found."
             )
-            sys.exit(1)
 
         delete_response = requests.delete(
             f"{control_plane_url}/cc-ui/v1/modules/{module_id}",
@@ -107,4 +106,6 @@ def delete_module(intent, flavor, version, profile, stage):
             f"❌ Error encountered while deleting module with intent {intent} flavor {flavor} version {version}: {e}"
         )
         traceback.print_exc()
-        sys.exit(1)
+        raise click.UsageError(
+            f"❌ Error encountered while deleting module with intent {intent} flavor {flavor} version {version}"
+        )

@@ -1,5 +1,4 @@
 import os
-import sys
 import click
 import requests
 import yaml
@@ -30,38 +29,36 @@ def register_output_type(yaml_path, profile, inferred_from_module):
         click.echo(f"Profile selected: {profile}")
         credentials = is_logged_in(profile)
         if not credentials:
-            click.echo(f"❌ Not logged in under profile {profile}. Please login first.")
-            sys.exit(1)
+            raise click.UsageError(
+                f"❌ Not logged in under profile {profile}. Please login first."
+            )
 
         # Ensure file is a yaml file
         if not yaml_path.endswith((".yaml", ".yml")):
-            click.echo(
+            raise click.UsageError(
                 "❌ The provided file must be a YAML file (.yaml or .yml extension)."
             )
-            sys.exit(1)
 
         # Parse the YAML file
         with open(yaml_path, "r") as file:
             try:
                 output_type_def = yaml.safe_load(file)
             except yaml.YAMLError as e:
-                click.echo(f"❌ Error parsing YAML file: {e}")
-                sys.exit(1)
+                raise click.UsageError(f"❌ Error parsing YAML file: {e}")
 
         # Validate the YAML structure
         if not output_type_def.get("name"):
-            click.echo("❌ 'name' field is required in the YAML file.")
-            sys.exit(1)
+            raise click.UsageError("❌ 'name' field is required in the YAML file.")
 
         if not output_type_def.get("properties"):
-            click.echo("❌ 'properties' field is required in the YAML file.")
-            sys.exit(1)
+            raise click.UsageError(
+                "❌ 'properties' field is required in the YAML file."
+            )
 
         # Parse the name to extract namespace and name
         name_parts = output_type_def["name"].split("/", 1)
         if len(name_parts) != 2:
-            click.echo("❌ Name should be in the format '@namespace/name'.")
-            sys.exit(1)
+            raise click.UsageError("❌ Name should be in the format '@namespace/name'.")
 
         namespace = name_parts[0]  # Keep the @ symbol
         name = name_parts[1]
@@ -112,11 +109,9 @@ def register_output_type(yaml_path, profile, inferred_from_module):
                     error_message = error_json["message"]
             except:
                 pass
-            click.echo(
+            raise click.UsageError(
                 f"❌ Failed to register output type. Status code: {response.status_code}, Error: {error_message}"
             )
-            sys.exit(1)
 
     except Exception as e:
-        click.echo(f"❌ An error occurred: {e}")
-        sys.exit(1)
+        raise click.UsageError(f"❌ An error occurred: {e}")
