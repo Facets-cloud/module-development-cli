@@ -245,7 +245,7 @@ ftf add-import /path/to/module --name count_vault --resource azurerm_key_vault.c
 ftf add-import /path/to/module --name for_each_vault --resource azurerm_key_vault.for_each_key_vault --key my-key
 
 # Non-interactive mode with full resource state address
-ftf add-import /path/to/module --name for_each_vault --resource-address azurerm_key_vault.for_each_key_vault[0]
+ftf add-import /path/to/module --name for_each_vault --resource-address 'azurerm_key_vault.for_each_key_vault[0]'
 ```
 
 **Notes**:

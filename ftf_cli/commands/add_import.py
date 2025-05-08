@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Union, Any, Tuple
 import click
 import questionary
 import yaml
+import sys
 from ftf_cli.utils import (
     validate_facets_yaml,
     update_facets_yaml_imports,
@@ -67,19 +68,19 @@ def add_import(
         facets_yaml_path = os.path.join(path, "facets.yaml")
         if not os.path.exists(facets_yaml_path):
             click.echo(f"❌ facets.yaml not found at {facets_yaml_path}")
-            return
+            sys.exit(1)
 
         # Enforce that name is required in all scenarios
         if name is None:
             click.echo("❌ Import name is required. Use --name option.")
-            return
+            sys.exit(1)
 
         # Validate facets.yaml format
         try:
             validate_facets_yaml(path)
         except click.UsageError as e:
             click.echo(f"❌ {e}")
-            return
+            sys.exit(1)
 
         # If resource_address is provided, skip resource discovery and run in non-interactive mode
         if resource_address is not None:
@@ -87,7 +88,7 @@ def add_import(
                 click.echo(
                     "❌ Import name is required when using --resource-address. Use --name option."
                 )
-                return
+                sys.exit(1)
             import_config = {
                 "name": name,
                 "resource_address": resource_address,
@@ -95,7 +96,7 @@ def add_import(
             }
             if not validate_import_config(import_config):
                 click.echo("❌ Invalid import configuration. Aborting.")
-                return
+                sys.exit(1)
             result = update_facets_yaml_non_interactive(facets_yaml_path, import_config)
             if result:
                 click.echo(
@@ -112,7 +113,7 @@ def add_import(
 
         if not resources:
             click.echo("❌ No resources found in the module.")
-            return
+            sys.exit(1)
 
         click.echo(f"Found {len(resources)} resources.")
 
@@ -154,7 +155,7 @@ def add_import(
             resources, resource, non_interactive
         )
         if not selected_resource:
-            return
+            sys.exit(1)
 
         # Configure import with CLI options or prompts
         import_config = configure_import(
@@ -162,12 +163,12 @@ def add_import(
         )
 
         if not import_config:
-            return
+            sys.exit(1)
 
         # Validate the import configuration
         if not validate_import_config(import_config):
             click.echo("❌ Invalid import configuration. Aborting.")
-            return
+            sys.exit(1)
 
         # Update the facets.yaml file
         if non_interactive:
@@ -186,11 +187,14 @@ def add_import(
 
     except yaml.YAMLError as e:
         click.echo(f"❌ Error parsing YAML: {e}")
+        sys.exit(1)
     except Exception as e:
         if "hcl" in str(e).lower():
             click.echo(f"❌ Error parsing Terraform files: {e}")
+            sys.exit(1)
         else:
             click.echo(f"❌ Unexpected error: {e}")
+            sys.exit(1)
 
 
 def select_resource_by_options(
@@ -467,7 +471,7 @@ def update_facets_yaml(
 
             if action == "Quit without adding import":
                 click.echo("❌ Import not added. Operation canceled.")
-                return False
+                sys.exit(1)
 
             # User wants to enter a different name
             new_name = questionary.text(

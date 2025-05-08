@@ -11,6 +11,7 @@ import requests
 import hcl
 import glob
 import re
+import sys
 
 
 ALLOWED_TYPES = ["string", "number", "boolean", "enum"]
@@ -456,6 +457,7 @@ def validate_boolean(ctx, param, value):
     else:
         raise click.BadParameter("Boolean flag must be true or false.")
 
+
 def validate_number(value):
     """Validate that the given value is a number and return it as an integer or float."""
     try:
@@ -582,7 +584,7 @@ def generate_type_tree(spec: dict) -> dict:
                     result[key] = "any"
     return result
 
-  
+
 def update_facets_yaml_imports(yaml_path, import_config, mode="interactive"):
     """Update the imports section of facets.yaml file.
 
@@ -743,4 +745,5 @@ def discover_resources(path: str) -> list[dict]:
         except Exception as e:
             click.echo(f"⚠️ Could not parse {tf_file}: {e}")
             click.echo(f"Error details: {str(e)}")
+            sys.exit(1)
     return sorted(resources, key=lambda r: r["address"])
