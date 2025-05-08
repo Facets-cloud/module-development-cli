@@ -74,7 +74,7 @@ def expose_provider(path, name, source, version, attributes, output):
         # Get outputs declared in facets yaml
         outputs = facets_yaml.get("outputs")
         output_list = []
-        if outputs != None:
+        if outputs is not None:
             output_list = outputs.keys()
 
         # Mention there are no outputs and generate the default output with intent name
@@ -115,7 +115,7 @@ def expose_provider(path, name, source, version, attributes, output):
 
         # prompt for output selection for attributes
         for attribute in provider_attributes.keys():
-            if provider_attributes[attribute] == None:
+            if provider_attributes[attribute] is None:
                 referred_output = prompt_user_for_output_selection(
                     output_lookup, attribute, True
                 )
@@ -144,7 +144,7 @@ def expose_provider(path, name, source, version, attributes, output):
         providers[name]["attributes"] = provider_attributes
 
         # add empty providers map if providers does not exist in selected output
-        if not "providers" in facets_yaml["outputs"][output]:
+        if "providers" not in facets_yaml["outputs"][output]:
             facets_yaml["outputs"][output]["providers"] = {}
 
         # add the generated provider config to selected output
@@ -244,7 +244,7 @@ def deflatten_dict(dict):
         back = front
         paths = list(key.split("."))
         for path in paths:
-            if front.get(path) == None:
+            if front.get(path) is None:
                 front[path] = {}
             back = front
             front = front[path]
