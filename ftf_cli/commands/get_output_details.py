@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import traceback
 import click
 import requests
@@ -29,7 +30,7 @@ def get_output_lookup_tree(profile, output):
         credentials = is_logged_in(profile)
         if not credentials:
             click.echo(f"❌ Not logged in under profile {profile}. Please login first.")
-            return
+            sys.exit(1)
 
         # Extract credentials
         control_plane_url = credentials["control_plane_url"]
@@ -50,20 +51,22 @@ def get_output_lookup_tree(profile, output):
 
             if not required_output_type:
                 click.echo(f"❌ Output type {output} not found.")
-                return
+                sys.exit(1)
 
             if "lookupTree" not in required_output_type:
                 lookup_tree = {"out": {"attributes": {}, "interfaces": {}}}
             else:
                 lookup_tree = json.loads(required_output_type["lookupTree"])
             click.echo(
-                f"Output type lookup tree for {output}:\n{json.dumps(lookup_tree, indent=2)}"
+                f"Output type lookup tree for {output}:\n{json.dumps(lookup_tree, indent=2, sort_keys=True)}"
             )
 
         else:
             click.echo(
                 f"❌ Failed to fetch output types. Status code: {response.status_code}"
             )
+            sys.exit(1)
     except Exception as e:
         click.echo(f"❌ An error occurred: {e}")
         traceback.print_exc()
+        sys.exit(1)

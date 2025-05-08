@@ -1,37 +1,84 @@
 import os
-import re
 import configparser
+from subprocess import run
+from lark import Token, Tree
 import yaml
 import jsonschema
 from jsonschema import validate, Draft7Validator
 import click
 import hcl2
 import requests
+import hcl
 import glob
 
 
-ALLOWED_TYPES = ['string', 'number', 'boolean', 'enum']
+ALLOWED_TYPES = ["string", "number", "boolean", "enum"]
+REQUIRED_TF_FACETS_VARS = ["instance", "instance_name", "environment", "inputs"]
 
 
-def validate_facets_yaml(path):
-    """Validate the existence and format of the facets.yaml file."""
-    yaml_path = os.path.join(path, 'facets.yaml')
+def validate_facets_yaml(path, filename="facets.yaml"):
+    """Validate the existence and format of specified facets yaml file in the given path."""
+    yaml_path = os.path.join(path, filename)
     if not os.path.isfile(yaml_path):
-        raise click.UsageError(f'❌ facets.yaml file does not exist at {os.path.abspath(yaml_path)}')
+        raise click.UsageError(
+            f"❌ {filename} file does not exist at {os.path.abspath(yaml_path)}"
+        )
 
     try:
-        with open(yaml_path, 'r') as f:
+        with open(yaml_path, "r") as f:
             data = yaml.safe_load(f)
             validate_yaml(data)
 
     except yaml.YAMLError as exc:
-        raise click.UsageError(f'❌ facets.yaml is not a valid YAML file: {exc}')
-
+        raise click.UsageError(f"❌ {filename} is not a valid YAML file: {exc}")
 
     return yaml_path
 
+def validate_facets_tf_vars(path, filename="variables.tf"):
+    """Validate the existence and format of specified facets tf vars file in the given path."""
+    variables_tf_path = os.path.join(path, filename)
+    if not os.path.isfile(variables_tf_path):
+        raise click.UsageError(
+            f"❌ {filename} file does not exist at {os.path.abspath(variables_tf_path)}"
+        )
+
+    try:
+        terraform_start_node: Tree = None
+        with open(variables_tf_path, "r") as file:
+            terraform_start_node = hcl.parse(file)
+
+        body_node: Tree = terraform_start_node.children[0]
+        child_nodes = body_node.children
+        
+        not_allowed_variables = []
+        
+        for child in child_nodes:
+            if child.data == "block" and len(child.children) > 2 and isinstance(child.children[0], Tree) and child.children[0].data == "identifier" and isinstance(child.children[0].children[0], Token) and child.children[0].children[0].type == "NAME" and child.children[0].children[0].value == "variable" and child.children[1].type == "STRING_LIT":
+                var_name = child.children[1].value
+                var_name = var_name.replace('"', "")
+                if var_name in REQUIRED_TF_FACETS_VARS:
+                    REQUIRED_TF_FACETS_VARS.remove(var_name)
+                else:
+                    not_allowed_variables.append(var_name)
+        
+        if len(REQUIRED_TF_FACETS_VARS) > 0:
+            raise click.UsageError(
+                f"❌ {filename} is missing required variables: {', '.join(REQUIRED_TF_FACETS_VARS)}"
+            )
+        elif len(not_allowed_variables) > 0:
+            raise click.UsageError(
+                f"❌ Following variables are not allowed in {filename}: {', '.join(not_allowed_variables)} ."
+            )
+        else:
+            click.echo(f"✅ {filename} contains all required facets tf variables.")
+           
+    except Exception as e:
+        raise click.UsageError(f"❌ {filename} is not a valid HCL file: {e}")
+
+    return variables_tf_path
+
 def generate_output_tree(obj):
-    """ Generate a JSON schema from a output.tf file. """
+    """Generate a JSON schema from a outputs.tf file."""
     if isinstance(obj, dict):
         transformed = {}
         for key, value in obj.items():
@@ -53,7 +100,7 @@ def generate_output_tree(obj):
 
 
 def transform_output_tree(tree, level=1):
-    """ Recursively transform the output tree into a Terraform-compatible schema with proper indentation."""
+    """Recursively transform the output tree into a Terraform-compatible schema with proper indentation."""
     INDENT = "  "  # Fixed indentation (2 spaces)
     current_indent = INDENT * level
     next_indent = INDENT * (level + 1)
@@ -81,9 +128,9 @@ def transform_output_tree(tree, level=1):
             for key, value in tree.items():
                 transformed_value = transform_output_tree(value, level + 1)
                 transformed_items.append(f"{next_indent}{key} = {transformed_value}")
-            
+
             # Step 1: Join the transformed items with a comma and newline
-            joined_items = ',\n'.join(transformed_items)
+            joined_items = ",\n".join(transformed_items)
 
             # Step 2: Construct the object block with proper indentation
             object_block = f"object({{\n{joined_items}\n{current_indent}}})"
@@ -107,7 +154,7 @@ def load_facets_yaml(path):
     yaml_path = validate_facets_yaml(path)
 
     # Load YAML content
-    with open(yaml_path, 'r') as file:
+    with open(yaml_path, "r") as file:
         content = yaml.safe_load(file)
 
     return content
@@ -115,15 +162,17 @@ def load_facets_yaml(path):
 
 def validate_variables_tf(path):
     """Ensure variables.tf exists and is valid HCL."""
-    variables_tf_path = os.path.join(path, 'variables.tf')
+    variables_tf_path = os.path.join(path, "variables.tf")
     if not os.path.isfile(variables_tf_path):
-        raise click.UsageError(f'❌ variables.tf file does not exist at {os.path.abspath(variables_tf_path)}')
+        raise click.UsageError(
+            f"❌ variables.tf file does not exist at {os.path.abspath(variables_tf_path)}"
+        )
 
     try:
-        with open(variables_tf_path, 'r') as f:
+        with open(variables_tf_path, "r") as f:
             hcl2.load(f)
     except Exception as e:
-        raise click.UsageError(f'❌ variables.tf is not a valid HCL file: {e}')
+        raise click.UsageError(f"❌ variables.tf is not a valid HCL file: {e}")
 
     return variables_tf_path
 
@@ -138,61 +187,59 @@ def insert_nested_fields(structure, keys, value):
         insert_nested_fields(structure[keys[0]], keys[1:], value)
 
 
-def update_spec_variable(terraform_code, variable_name, spec_identifier, new_fields):
-    lines = terraform_code.split("\n")
-    updated_lines = []
-    inside_spec = False
-    inside_variable = False
-    variable_found = False
-    spec_found = False
-    existing_structure = {}
+def update_spec_variable(
+    yaml_file: dict,
+    terraform_file_path: str,
+    instance_description: str,
+):
 
-    for line in lines:
-        stripped = line.strip()
+    with open(terraform_file_path, "r") as file:
+        terraform_code = file.read()
+        file.close()
 
-        if stripped.startswith(f'variable "{variable_name}" '):
-            inside_variable = True
-            variable_found = True
+    spec = {"spec": yaml_file.get("spec", {})}
+    type_tree = generate_type_tree(spec)
 
-        if inside_variable and stripped.startswith(spec_identifier):
-            inside_spec = True
-            spec_found = True
-            updated_lines.append(line)
-            continue
+    instance_string = generate_instance_block(type_tree, instance_description)
 
-        if inside_spec:
-            if stripped == "})":
-                inside_spec = False
+    new_instance_start_node = hcl.parses(instance_string)
 
-                # Insert the new fields before closing the spec block
-                for key, value in new_fields.items():
-                    keys = key.split(".")
-                    insert_nested_fields(existing_structure, keys, value)
+    start_node = hcl.parses(terraform_code)
+    body_node: Tree = start_node.children[0]
+    variable_nodes = body_node.children
 
-                def format_structure(structure, indent=4):
-                    formatted = []
-                    for key, value in sorted(structure.items()):
-                        if isinstance(value, dict):
-                            formatted.append(" " * indent + f"{key} = object({{")
-                            formatted.extend(format_structure(value, indent + 2))
-                            formatted.append(" " * indent + "})")
-                        else:
-                            formatted.append(" " * indent + f"{key} = {value}")
-                    return formatted
+    instance_node_found: bool = False
+    instance_node_index: int = -1
 
-                updated_lines.extend(format_structure(existing_structure, indent=6))
-                updated_lines.append(" " * 4 + "})")
-                continue
+    for index, variable_node in enumerate(variable_nodes):
+        if (
+            variable_node.data == "block"
+            and len(variable_node.children) > 1
+            and isinstance(variable_node.children[0], Tree)
+            and len(variable_node.children[0].children) > 0
+            and isinstance(variable_node.children[0].children[0], Token)
+            and variable_node.children[0].children[0].value == "variable"
+            and variable_node.children[1].type == "STRING_LIT"
+            and variable_node.children[1].value == f'"instance"'
+        ):
+            instance_node_found = True
+            instance_node_index = index
+            break
 
-        updated_lines.append(line)
+    # If the instance variable block is not found, append it to the file
+    if instance_node_found is False:
+        variable_nodes.append(new_instance_start_node.children[0].children[0])
+    else:
+        variable_nodes[instance_node_index] = new_instance_start_node.children[
+            0
+        ].children[0]
 
-    if not variable_found:
-        raise click.UsageError(f"❌ Variable '{variable_name}' not found in the Terraform file.")
-
-    if not spec_found:
-        raise click.UsageError(f"❌ Spec block '{spec_identifier}' not found in the variable '{variable_name}'.")
-
-    return "\n".join(updated_lines)
+    with open(terraform_file_path, "w") as file:
+        new_content = hcl.writes(start_node)
+        file.write(new_content)
+        file.close()
+        ensure_formatting_for_object(terraform_file_path)
+        return
 
 
 yaml_schema = {
@@ -205,9 +252,9 @@ yaml_schema = {
         "description": {"type": "string"},
         "clouds": {
             "type": "array",
-            "items": {"type": "string"}
+            "items": {"type": "string", "enum": ["aws", "azure", "gcp", "kubernetes"]},
         },
-        "spec": {},
+        "spec": jsonschema.Draft7Validator.META_SCHEMA,
         "outputs": {
             "type": "object",
             "patternProperties": {
@@ -225,17 +272,17 @@ yaml_schema = {
                                         "version": {"type": "string"},
                                         "attributes": {
                                             "type": "object",
-                                            "additionalProperties": True
-                                        }
+                                            "additionalProperties": True,
+                                        },
                                     },
-                                    "required": ["source", "version", "attributes"]
+                                    "required": ["source", "version", "attributes"],
                                 }
-                            }
-                        }
+                            },
+                        },
                     },
-                    "required": ["type"]
+                    "required": ["type"],
                 }
-            }
+            },
         },
         "inputs": {
             "type": "object",
@@ -244,54 +291,101 @@ yaml_schema = {
                     "type": "object",
                     "properties": {
                         "type": {"type": "string", "pattern": "^@outputs?/.+"},
-                        "providers": {
-                            "type": "array",
-                            "items": {"type": "string"}
-                        }
+                        "providers": {"type": "array", "items": {"type": "string"}},
                     },
-                    "required": ["type"]
+                    "required": ["type"],
                 }
-            }
+            },
         },
-        "sample": {"type": "object"},
+        "sample": {
+            "type": "object",
+            "properties": {
+                "kind": {"type": "string"},
+                "flavor": {"type": "string"},
+                "version": {"type": "string"},
+                "spec": {"type": "object"},
+            },
+            "required": ["kind", "flavor", "version", "spec"],
+        },
         "artifact_inputs": {
             "type": "object",
             "properties": {
                 "primary": {
                     "type": "object",
                     "properties": {
-                        "attribute_path": {"type": "string"},
-                        "artifact_type": {"type": "string", "enum": ["docker_image"]
-                        }
+                        "attribute_path": {
+                            "type": "string",
+                            "pattern": "^spec\.[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)*$",
+                        },
+                        "artifact_type": {
+                            "type": "string",
+                            "enum": ["docker_image", "freestyle"],
+                        },
                     },
-                    "required": ["attribute_path", "artifact_type"]
+                    "required": ["attribute_path", "artifact_type"],
                 }
             },
-            "required": ["primary"]
+            "required": ["primary"],
         },
-        "metadata": jsonschema.Draft7Validator.META_SCHEMA
+        "metadata": jsonschema.Draft7Validator.META_SCHEMA,
     },
-    "required": ["intent", "flavor", "version", "description", "spec"]
+    "required": ["intent", "flavor", "version", "description", "spec", "clouds"],
 }
+
+
+def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
+    """
+    Recursively check that no field in spec is of type 'array'.
+    Also check that any direct patternProperties have object type only, not primitive types like string.
+    Nested properties inside patternProperties can be any allowed types.
+    Raises a UsageError with instruction if found.
+    Assumes input is always valid JSON schema (no direct list values at property keys).
+    """
+    if not isinstance(spec_obj, dict):
+        return
+
+    for key, value in spec_obj.items():
+        if isinstance(value, dict):
+            field_type = value.get("type")
+            if field_type == "array":
+                raise click.UsageError(
+                    f"Invalid array type found at {path}.{key}. "
+                    f"Arrays are not allowed in spec. Use patternProperties for array-like structures instead."
+                )
+            if "patternProperties" in value:
+                pp = value["patternProperties"]
+                for pattern_key, pp_val in pp.items():
+                    pattern_type = pp_val.get("type")
+                    if not isinstance(pattern_type, str) or pattern_type != "object":
+                        raise click.UsageError(
+                            f'patternProperties at {path}.{key} with pattern "{pattern_key}" must be of type object.'
+                        )
+            check_no_array_or_invalid_pattern_in_spec(value, path=f"{path}.{key}")
 
 
 def validate_yaml(data):
     try:
         validate(instance=data, schema=yaml_schema)
+        # Additional check for arrays and invalid patternProperties in spec
+        spec_obj = data.get("spec")
+        if spec_obj:
+            check_no_array_or_invalid_pattern_in_spec(spec_obj)
     except jsonschema.exceptions.ValidationError as e:
         print(e)
-        raise click.UsageError(f'❌ facets.yaml is not following Facets Schema: {e.message}')
+        raise click.UsageError(
+            f"❌ facets.yaml is not following Facets Schema: {e.message}"
+        )
     print("Facets YAML validation successful!")
     return True
 
 
 def fetch_user_details(cp_url, username, token):
-    return requests.get(f'{cp_url}/api/me', auth=(username, token))
+    return requests.get(f"{cp_url}/api/me", auth=(username, token))
 
 
 def store_credentials(profile, credentials):
     config = configparser.ConfigParser()
-    cred_path = os.path.expanduser('~/.facets/credentials')
+    cred_path = os.path.expanduser("~/.facets/credentials")
     os.makedirs(os.path.dirname(cred_path), exist_ok=True)
 
     if os.path.exists(cred_path):
@@ -299,50 +393,183 @@ def store_credentials(profile, credentials):
 
     config[profile] = credentials
 
-    with open(cred_path, 'w') as configfile:
+    with open(cred_path, "w") as configfile:
         config.write(configfile)
 
 
 def is_logged_in(profile):
     config = configparser.ConfigParser()
-    cred_path = os.path.expanduser('~/.facets/credentials')
+    cred_path = os.path.expanduser("~/.facets/credentials")
 
     if not os.path.exists(cred_path):
-        click.echo('Credentials file not found. Please login first.')
+        click.echo("Credentials file not found. Please login first.")
         return False
 
     config.read(cred_path)
     if profile not in config:
-        click.echo(f'Profile {profile} not found. Please login using this profile.')
+        click.echo(f"Profile {profile} not found. Please login using this profile.")
         return False
 
     try:
         credentials = config[profile]
-        response = fetch_user_details(credentials['control_plane_url'], credentials['username'], credentials['token'])
+        response = fetch_user_details(
+            credentials["control_plane_url"],
+            credentials["username"],
+            credentials["token"],
+        )
         response.raise_for_status()
-        click.echo('Successfully authenticated with the control plane.')
+        click.echo("Successfully authenticated with the control plane.")
         return credentials  # Return credentials if login is successful
     except requests.exceptions.HTTPError as http_err:
-        click.echo(f'HTTP error occurred: {http_err}')
+        click.echo(f"HTTP error occurred: {http_err}")
         return False
     except KeyError as key_err:
-        click.echo(f'Missing credential information: {key_err}')
-        raise click.UsageError('Incomplete credentials found in profile. Please re-login.')
+        click.echo(f"Missing credential information: {key_err}")
+        raise click.UsageError(
+            "Incomplete credentials found in profile. Please re-login."
+        )
     except Exception as err:
-        click.echo(f'An error occurred: {err}')
+        click.echo(f"An error occurred: {err}")
         return False
+
 
 def validate_boolean(ctx, param, value):
     if isinstance(value, bool):
         return value
-    if value.lower() in ('true', 'yes', '1'):
+    if value.lower() in ("true", "yes", "1"):
         return True
-    elif value.lower() in ('false', 'no', '0'):
+    elif value.lower() in ("false", "no", "0"):
         return False
     else:
         raise click.BadParameter("Boolean flag must be true or false.")
 
+def validate_number(value):
+    """Validate that the given value is a number and return it as an integer or float."""
+    try:
+        # Check if the value is an integer
+        if "." not in value:
+            return int(value)
+        # Otherwise, treat it as a float
+        return float(value)
+    except ValueError:
+        raise click.UsageError(
+            f"❌ Default value '{value}' must be a valid number (integer or float)."
+        )
 
+
+def ensure_formatting_for_object(file_path):
+    """Ensure there is a newline after 'object({' in the Terraform file."""
+    with open(file_path, "r") as file:
+        lines = file.readlines()
+
+    updated_lines = []
+    for line in lines:
+        if "object({" in line or "})" in line:
+            # Add a newline after 'object({'
+            line = line.replace("object({", "object({\n", -1)
+            line = line.replace("})", "})\n", -1)
+            line = line.replace("})\n,", "}),\n", -1)
+            # make sure only one newline is added in the end
+            line = line.rstrip() + "\n"
+            updated_lines.append(line)
+        else:
+            updated_lines.append(line)
+
+    with open(file_path, "w") as file:
+        file.writelines(updated_lines)
+
+    with open(os.devnull, "w") as devnull:
+        run(["terraform", "fmt", file_path], stdout=devnull, stderr=devnull)
+
+
+def generate_instance_block(type_tree: dict, description: str) -> str:
+    """
+    Generate a terraform variable instance  block dynamically.
+
+    Args:
+        type_tree (str): The type tree to be used for generating the variable block.
+        description (str): The description of the variable.
+
+    Returns:
+        str: The generated Terraform variable block.
+    """
+
+    transformed_type_tree = transform_type_tree(type_tree, level=2)
+
+    # Generate the full variable block
+    variable_block = f"""variable "instance" {{
+  description = "{description}"
+  type = object({{
+    kind    = string
+    flavor  = string
+    version = string
+{transformed_type_tree}
+  }})
+}}
+"""
+    return variable_block
+
+
+def transform_type_tree(tree: any, level: int) -> str:
+    """
+    Recursively transform the type tree into a terraform-compatible schema with proper indentation.
+
+    Args:
+        tree (any): The type tree to be transformed.
+        level (int): The current indentation level.
+
+    Returns:
+        str: The transformed Terraform-compatible schema.
+    """
+    INDENT = "  "
+    current_indent = INDENT * level
+
+    if isinstance(tree, dict):
+        transformed_items = []
+        for key, value in tree.items():
+            transformed_value = transform_type_tree(value, level + 1)
+            if isinstance(value, dict):
+                object_block = f"object({{\n{transformed_value}\n{current_indent}}})"
+                transformed_items.append(f"{current_indent}{key} = {object_block}")
+            else:
+                transformed_items.append(f"{current_indent}{key} = {transformed_value}")
+
+        transformed_items_str = ",\n".join(transformed_items)
+        return f"{transformed_items_str}"
+
+    else:
+        return f"{tree}"
+
+
+def generate_type_tree(spec: dict) -> dict:
+    """
+    Generate a type tree from the given spec.
+
+    Args:
+        spec (dict): The spec dictionary to generate the type tree from.
+
+    Returns:
+        dict: The generated type tree.
+    """
+    result = {}
+    for key, value in spec.items():
+        if isinstance(value, dict) and "type" in value:
+            if value["type"] == "string":
+                result[key] = "string"
+            elif value["type"] == "number":
+                result[key] = "number"
+            elif value["type"] == "boolean":
+                result[key] = "boolean"
+            elif value["type"] == "array":
+                result[key] = "array"
+            elif value["type"] == "object":
+                if "properties" in value:
+                    result[key] = generate_type_tree(value["properties"])
+                else:
+                    result[key] = "any"
+    return result
+
+  
 def update_facets_yaml_imports(yaml_path, import_config, mode="interactive"):
     """Update the imports section of facets.yaml file.
 
@@ -502,28 +729,3 @@ def discover_resources(path: str) -> list[dict]:
             click.echo(f"⚠️ Could not parse {tf_file}: {e}")
             click.echo(f"Error details: {str(e)}")
     return sorted(resources, key=lambda r: r["address"])
-
-
-if __name__ == "__main__":
-    sample_terraform_code = """
-variable "example_variable" {
-  type = object({
-    spec = object({
-      cpu    = number
-      memory = number
-    })
-  })
-}
-    """
-
-    test_cases = [
-        {"gpu": "number"},
-        {"disk.size": "number", "disk.type": "string"},
-        {"network.vpc": "string", "network.subnet": "string"},
-    ]
-
-    for i, new_fields in enumerate(test_cases, 1):
-        print(f"Test Case {i}:")
-        updated_code = update_spec_variable(sample_terraform_code, "example_variable", "spec =", new_fields)
-        print(updated_code)
-        print("\n" + "-" * 50 + "\n")

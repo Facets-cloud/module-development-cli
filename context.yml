@@ -1,0 +1,21 @@
+.gitignore: Configuration file specifying intentionally untracked files and directories
+  to ignore in the git repository, including Python cache files, egg-info directories,
+  and virtual environment folders like .venv.
+README.md: Documentation file providing instructions on installing and using the FTF
+  CLI tool, including how to validate facets YAML files and other usage examples.
+context.yml: YAML configuration file for storing project-specific context, currently
+  initialized as an empty file.
+ftf_cli/cli.py: Main CLI entry point for the ftf_cli tool, it defines and registers
+  multiple CLI commands using the Click library, including commands for module management
+  and validation.
+ftf_cli/commands/validate_facets.py: Defines a CLI command for validating the facets
+  YAML file in a specified directory, allowing a filename option, and reporting success
+  or failure.
+ftf_cli/utils.py: Utility functions for validating facets YAML files and checking
+  specifications against schemas, including enhanced validation for patternProperties.
+tests/integration/test_cli_commands.py: Integration tests for CLI commands of the
+  ftf_cli tool, including tests for module generation, adding variables, and directory
+  validation.
+tests/test_utils_validation.py: Unit tests ensuring the correctness of utility validation
+  functions, particularly focusing on facets.yaml schema compliance and patternProperties
+  validation.

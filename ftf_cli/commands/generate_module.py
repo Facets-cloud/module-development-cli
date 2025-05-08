@@ -1,4 +1,5 @@
 import os
+import sys
 import click
 from jinja2 import Environment, FileSystemLoader
 import importlib.resources as pkg_resources
@@ -15,7 +16,7 @@ def generate_module(path, intent, flavor, cloud, title, description, version):
     """Generate a new module."""
     if str(version).isdigit():
         click.echo(f"❌ Version {version} is not a valid version. Use a valid version like 1.0")
-        return
+        sys.exit(1)
     
     base_module_path = os.path.join(path, f"{intent}/{flavor}")
     module_path = os.path.join(base_module_path, version)
@@ -30,10 +31,10 @@ def generate_module(path, intent, flavor, cloud, title, description, version):
             version = str(next_version)
             module_path = os.path.join(base_module_path, version)
             click.echo(f"❌ Version {base_version} already exists. Use this version {version} instead.")
-            return
+            sys.exit(1)
         except ValueError:
             click.echo(f"❌ Version {version.split('_')[0]} already exists. Use this version {version} instead.")
-            return
+            sys.exit(1)
     
     # Create the directory
     os.makedirs(module_path, exist_ok=True)
@@ -43,7 +44,7 @@ def generate_module(path, intent, flavor, cloud, title, description, version):
     env = Environment(loader=FileSystemLoader(str(templates_path)))
 
     # Render and write templates
-    for template_name in ['main.tf.j2', 'variables.tf.j2', 'output.tf.j2', 'facets.yaml.j2']:
+    for template_name in ['main.tf.j2', 'variables.tf.j2', 'outputs.tf.j2', 'facets.yaml.j2']:
         template = env.get_template(template_name)
         rendered_content = template.render(intent=intent, flavor=flavor, cloud=cloud, title=title,
                                            description=description)
