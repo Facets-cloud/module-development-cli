@@ -1,16 +1,16 @@
+import json
 import os
 import sys
 import click
 import requests
 import yaml
+from pathlib import Path
 
 from ftf_cli.utils import is_logged_in
 
 
 @click.command()
-@click.argument(
-    "yaml_path", type=click.Path(exists=True, file_okay=True, dir_okay=False)
-)
+@click.argument("yaml_path", type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.option(
     "-p",
     "--profile",
@@ -35,9 +35,7 @@ def register_output_type(yaml_path, profile, inferred_from_module):
 
         # Ensure file is a yaml file
         if not yaml_path.endswith((".yaml", ".yml")):
-            click.echo(
-                "❌ The provided file must be a YAML file (.yaml or .yml extension)."
-            )
+            click.echo("❌ The provided file must be a YAML file (.yaml or .yml extension).")
             sys.exit(1)
 
         # Parse the YAML file
@@ -52,7 +50,7 @@ def register_output_type(yaml_path, profile, inferred_from_module):
         if not output_type_def.get("name"):
             click.echo("❌ 'name' field is required in the YAML file.")
             sys.exit(1)
-
+        
         if not output_type_def.get("properties"):
             click.echo("❌ 'properties' field is required in the YAML file.")
             sys.exit(1)
@@ -62,7 +60,7 @@ def register_output_type(yaml_path, profile, inferred_from_module):
         if len(name_parts) != 2:
             click.echo("❌ Name should be in the format '@namespace/name'.")
             sys.exit(1)
-
+        
         namespace = name_parts[0]  # Keep the @ symbol
         name = name_parts[1]
 
@@ -70,13 +68,11 @@ def register_output_type(yaml_path, profile, inferred_from_module):
         providers = []
         if "providers" in output_type_def:
             for provider_name, provider_data in output_type_def["providers"].items():
-                providers.append(
-                    {
-                        "name": provider_name,
-                        "source": provider_data.get("source", ""),
-                        "version": provider_data.get("version", ""),
-                    }
-                )
+                providers.append({
+                    "name": provider_name,
+                    "source": provider_data.get("source", ""),
+                    "version": provider_data.get("version", "")
+                })
 
         # Prepare the request payload
         request_payload = {
@@ -85,7 +81,7 @@ def register_output_type(yaml_path, profile, inferred_from_module):
             "lookupTree": None,
             "inferredFromModule": inferred_from_module,
             "properties": output_type_def["properties"],
-            "providers": providers,
+            "providers": providers
         }
 
         # Extract credentials
@@ -97,13 +93,11 @@ def register_output_type(yaml_path, profile, inferred_from_module):
         response = requests.post(
             f"{control_plane_url}/cc-ui/v1/tf-outputs",
             json=request_payload,
-            auth=(username, token),
+            auth=(username, token)
         )
 
         if response.status_code in [200, 201]:
-            click.echo(
-                f"✅ Successfully registered output type: {output_type_def['name']}"
-            )
+            click.echo(f"✅ Successfully registered output type: {output_type_def['name']}")
         else:
             error_message = response.text
             try:
@@ -112,11 +106,9 @@ def register_output_type(yaml_path, profile, inferred_from_module):
                     error_message = error_json["message"]
             except:
                 pass
-            click.echo(
-                f"❌ Failed to register output type. Status code: {response.status_code}, Error: {error_message}"
-            )
+            click.echo(f"❌ Failed to register output type. Status code: {response.status_code}, Error: {error_message}")
             sys.exit(1)
-
+    
     except Exception as e:
         click.echo(f"❌ An error occurred: {e}")
         sys.exit(1)

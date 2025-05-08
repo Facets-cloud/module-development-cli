@@ -1,6 +1,7 @@
 from subprocess import run
 import sys
 import click
+import yaml
 from ftf_cli.utils import (
     validate_facets_yaml,
     validate_variables_tf,
