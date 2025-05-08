@@ -1,10 +1,14 @@
-import os
 import click
 from ftf_cli.utils import validate_facets_yaml
 
+
 @click.command()
-@click.argument('path', type=click.Path(exists=True, file_okay=False, dir_okay=True))
-@click.option('--filename', default='facets.yaml', help='Name of the facets YAML file to validate.')
+@click.argument("path", type=click.Path(exists=True, file_okay=False, dir_okay=True))
+@click.option(
+    "--filename",
+    default="facets.yaml",
+    help="Name of the facets YAML file to validate.",
+)
 def validate_facets(path, filename):
     """Validate the facets YAML file within the specified directory."""
 

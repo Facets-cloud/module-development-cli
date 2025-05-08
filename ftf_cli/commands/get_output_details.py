@@ -45,7 +45,9 @@ def get_output_lookup_tree(profile, output):
         if response.status_code == 200:
             registered_output_types = {}
             for registered_output_type in response.json():
-                registered_output_types[registered_output_type["name"]] = registered_output_type
+                registered_output_types[registered_output_type["name"]] = (
+                    registered_output_type
+                )
 
             required_output_type = registered_output_types.get(output)
 

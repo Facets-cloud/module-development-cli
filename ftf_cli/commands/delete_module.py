@@ -1,4 +1,3 @@
-import json
 import os
 import sys
 import traceback
@@ -78,7 +77,7 @@ def delete_module(intent, flavor, version, profile, stage):
             elif (
                 stage == "PREVIEW"
                 and module["stage"] == "PUBLISHED"
-                and module["previewModuleId"] != None
+                and module["previewModuleId"] is not None
             ):
                 module_id = module["previewModuleId"]
                 break

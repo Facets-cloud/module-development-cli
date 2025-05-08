@@ -26,7 +26,7 @@ To install FTF CLI from source, follow these steps:
 
 #### Prerequisites
 
-- Python 3.6 or later
+- Python 3.9 or later
 - Virtual environment (recommended)
 
 #### Steps
@@ -48,7 +48,7 @@ To install FTF CLI from source, follow these steps:
 3. **Install the package**:
 
    ```bash
-   pip install .
+   pip install -e .[dev]  # Install with development dependencies
    ```
 
 ## Usage

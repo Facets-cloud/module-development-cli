@@ -4,7 +4,7 @@ from subprocess import run
 from lark import Token, Tree
 import yaml
 import jsonschema
-from jsonschema import validate, Draft7Validator
+from jsonschema import validate
 import click
 import hcl2
 import requests
@@ -35,6 +35,7 @@ def validate_facets_yaml(path, filename="facets.yaml"):
 
     return yaml_path
 
+
 def validate_facets_tf_vars(path, filename="variables.tf"):
     """Validate the existence and format of specified facets tf vars file in the given path."""
     variables_tf_path = os.path.join(path, filename)
@@ -50,21 +51,31 @@ def validate_facets_tf_vars(path, filename="variables.tf"):
 
         body_node: Tree = terraform_start_node.children[0]
         child_nodes = body_node.children
-        
+
         not_allowed_variables = []
-        
+        required_tf_facets_vars = REQUIRED_TF_FACETS_VARS.copy()
+
         for child in child_nodes:
-            if child.data == "block" and len(child.children) > 2 and isinstance(child.children[0], Tree) and child.children[0].data == "identifier" and isinstance(child.children[0].children[0], Token) and child.children[0].children[0].type == "NAME" and child.children[0].children[0].value == "variable" and child.children[1].type == "STRING_LIT":
+            if (
+                child.data == "block"
+                and len(child.children) > 2
+                and isinstance(child.children[0], Tree)
+                and child.children[0].data == "identifier"
+                and isinstance(child.children[0].children[0], Token)
+                and child.children[0].children[0].type == "NAME"
+                and child.children[0].children[0].value == "variable"
+                and child.children[1].type == "STRING_LIT"
+            ):
                 var_name = child.children[1].value
                 var_name = var_name.replace('"', "")
-                if var_name in REQUIRED_TF_FACETS_VARS:
-                    REQUIRED_TF_FACETS_VARS.remove(var_name)
+                if var_name in required_tf_facets_vars:
+                    required_tf_facets_vars.remove(var_name)
                 else:
                     not_allowed_variables.append(var_name)
-        
-        if len(REQUIRED_TF_FACETS_VARS) > 0:
+
+        if len(required_tf_facets_vars) > 0:
             raise click.UsageError(
-                f"❌ {filename} is missing required variables: {', '.join(REQUIRED_TF_FACETS_VARS)}"
+                f"❌ {filename} is missing required variables: {', '.join(required_tf_facets_vars)}"
             )
         elif len(not_allowed_variables) > 0:
             raise click.UsageError(
@@ -72,11 +83,12 @@ def validate_facets_tf_vars(path, filename="variables.tf"):
             )
         else:
             click.echo(f"✅ {filename} contains all required facets tf variables.")
-           
+
     except Exception as e:
         raise click.UsageError(f"❌ {filename} is not a valid HCL file: {e}")
 
     return variables_tf_path
+
 
 def generate_output_tree(obj):
     """Generate a JSON schema from a outputs.tf file."""
@@ -221,7 +233,7 @@ def update_spec_variable(
             and isinstance(variable_node.children[0].children[0], Token)
             and variable_node.children[0].children[0].value == "variable"
             and variable_node.children[1].type == "STRING_LIT"
-            and variable_node.children[1].value == f'"instance"'
+            and variable_node.children[1].value == '"instance"'
         ):
             instance_node_found = True
             instance_node_index = index
