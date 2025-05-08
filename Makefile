@@ -42,7 +42,7 @@ ifeq ($(OS),Windows)
 	@if not exist env\Scripts\pip.exe ( \
 		echo "Virtual environment not found. Run 'make setup' first." && exit 1 \
 	)
-	$(PIP) install .
+	$(ACTIVATE) && $(PIP) install .
 else
 	@if [ ! -f "./env/bin/pip" ]; then \
 		echo "Virtual environment not found. Run 'make setup' first." && exit 1; \
@@ -55,7 +55,7 @@ ifeq ($(OS),Windows)
 	@if not exist env\Scripts\pip.exe ( \
 		echo "Virtual environment not found. Run 'make setup' first." && exit 1 \
 	)
-	$(PIP) install -e ".[dev]"
+	$(ACTIVATE) && $(PIP) install -e ".[dev]"
 else
 	@if [ ! -f "./env/bin/pip" ]; then \
 		echo "Virtual environment not found. Run 'make setup' first." && exit 1; \
