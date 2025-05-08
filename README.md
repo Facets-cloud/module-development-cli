@@ -317,6 +317,30 @@ ftf register-output-type YAML_PATH [OPTIONS]
 - You can include a `providers` section in the YAML to specify provider information.
 - Ensures you're logged in before attempting to register the output type.
 
+#### Get Resources
+
+List all Terraform resources in the given module directory.
+
+```bash
+ftf get-resources /path/to/module
+```
+
+**Arguments**:
+- `/path/to/module`: Filesystem path to the directory containing Terraform files.
+
+**Description**:
+- Discovers and lists all Terraform resources defined in the module's `.tf` files.
+- Shows the resource address and whether it uses `count` or `for_each`.
+- Useful for quickly auditing which resources are present in a module.
+
+**Example Output**:
+```
+Found 3 resources:
+- aws_s3_bucket.bucket
+- aws_instance.web (with count)
+- aws_security_group.sg (with for_each)
+```
+
 ## Contribution
 
 Feel free to fork the repository and submit pull requests for any feature enhancements or bug fixes.
