@@ -11,13 +11,13 @@ You can install FTF CLI using pip, pipx, or directly from source.
 #### Using pipx (recommended)
 
 ```bash
-pipx install git+https://github.com/Facets-cloud/module-development-cli.git
+pipx install ftf-cli
 ```
 
 #### Using pip
 
 ```bash
-pip install git+https://github.com/Facets-cloud/module-development-cli.git
+pip install ftf-cli
 ```
 
 ### Installing from source
