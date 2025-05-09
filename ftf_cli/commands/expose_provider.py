@@ -1,4 +1,3 @@
-import sys
 import click
 import yaml
 import os
@@ -62,10 +61,9 @@ def expose_provider(path, name, source, version, attributes, output):
         output_file = os.path.join(path, "outputs.tf")
 
         if not (os.path.exists(output_file) and os.path.exists(facets_yaml_path)):
-            click.echo(
+            raise click.UsageError(
                 f"❌ {output_file} or {facets_yaml_path} not found. Run validate directory command to validate directory"
             )
-            sys.exit(1)
 
         with open(facets_yaml_path, "r") as file:
             facets_yaml = yaml.safe_load(file)
@@ -84,10 +82,9 @@ def expose_provider(path, name, source, version, attributes, output):
             intent = facets_yaml.get("intent", "")
 
             if intent == "":
-                click.echo(
+                raise click.UsageError(
                     f"❌ Invalid facets yaml {facets_yaml_path}. Run validate directory command to validate."
                 )
-                sys.exit(1)
 
             output_type = f"@outputs/{intent}"
 
@@ -105,8 +102,9 @@ def expose_provider(path, name, source, version, attributes, output):
                 choices=output_list,
             ).ask()
         elif output not in output_list:
-            click.echo(f"❌ Invalid output {output}. Please select from {output_list}")
-            sys.exit(1)
+            raise click.UsageError(
+                f"❌ Invalid output {output}. Please select from {output_list}"
+            )
 
         # generate output selection menu
         output_lookup = generate_output_lookup(path)
@@ -157,8 +155,9 @@ def expose_provider(path, name, source, version, attributes, output):
         click.echo(f"✅ Sucessfully exposed the provider {name} in output {output}")
 
     except Exception as e:
-        click.echo(f"❌ Error encounter while adding provider {name}: {e}")
-        sys.exit(1)
+        raise click.UsageError(
+            f"❌ Error encountered while adding provider {name}: {e}"
+        )
 
 
 def generate_default_output(output_type):
@@ -185,7 +184,7 @@ def prompt_user_for_output_selection(obj, attribute, is_root=False):
 
     # if selected object is empty object
     if nested_obj == {}:
-        raise Exception(
+        raise click.UsageError(
             f"❌ Selected object {selected_output} does not expose any fields."
         )
 

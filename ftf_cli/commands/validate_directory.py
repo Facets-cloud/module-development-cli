@@ -1,4 +1,3 @@
-import sys
 import click
 from subprocess import run, CalledProcessError
 from ftf_cli.utils import (
@@ -29,10 +28,9 @@ def validate_directory(path, check_only, skip_terraform_validation):
 
     # Check if Terraform is installed
     if run("terraform version", shell=True, capture_output=True).returncode != 0:
-        click.echo(
+        raise click.UsageError(
             "❌ Terraform is not installed. Please install Terraform to continue."
         )
-        sys.exit(1)
 
     try:
         # Validate the facets.yaml file in the given path
@@ -113,7 +111,7 @@ def validate_directory(path, check_only, skip_terraform_validation):
                     click.echo(
                         f"Check: {check.check_id}, Severity: {check.severity}, File: {check.file_path}, Line: {check.file_line}"
                     )
-            raise Exception("Checkov validation did not pass.")
+            raise click.UsageError("Checkov validation did not pass.")
         else:
             click.echo("✅ Checkov validation passed.")
 

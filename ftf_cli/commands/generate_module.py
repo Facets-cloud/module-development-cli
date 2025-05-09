@@ -1,5 +1,4 @@
 import os
-import sys
 import click
 from jinja2 import Environment, FileSystemLoader
 import importlib.resources as pkg_resources
@@ -25,10 +24,9 @@ import importlib.resources as pkg_resources
 def generate_module(path, intent, flavor, cloud, title, description, version):
     """Generate a new module."""
     if str(version).isdigit():
-        click.echo(
+        raise click.UsageError(
             f"❌ Version {version} is not a valid version. Use a valid version like 1.0"
         )
-        sys.exit(1)
 
     base_module_path = os.path.join(path, f"{intent}/{flavor}")
     module_path = os.path.join(base_module_path, version)
@@ -44,15 +42,13 @@ def generate_module(path, intent, flavor, cloud, title, description, version):
                 )  # Round to avoid floating point issues
             version = str(next_version)
             module_path = os.path.join(base_module_path, version)
-            click.echo(
+            raise click.UsageError(
                 f"❌ Version {base_version} already exists. Use this version {version} instead."
             )
-            sys.exit(1)
         except ValueError:
-            click.echo(
+            raise click.UsageError(
                 f"❌ Version {version.split('_')[0]} already exists. Use this version {version} instead."
             )
-            sys.exit(1)
 
     # Create the directory
     os.makedirs(module_path, exist_ok=True)

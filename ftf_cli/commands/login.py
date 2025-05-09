@@ -1,4 +1,3 @@
-import sys
 import click
 from urllib.parse import urlparse
 from ftf_cli.utils import fetch_user_details, store_credentials
@@ -28,10 +27,9 @@ def login(profile, username, token, control_plane_url):
 
     # Validate and clean URL
     if not control_plane_url.startswith(("http://", "https://")):
-        click.echo(
+        raise click.UsageError(
             "❌ Invalid URL. Please ensure the URL starts with http:// or https://"
         )
-        sys.exit(1)
 
     parsed_url = urlparse(control_plane_url)
     control_plane_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
@@ -50,5 +48,4 @@ def login(profile, username, token, control_plane_url):
         }
         store_credentials(profile, credentials)
     except requests.exceptions.HTTPError as e:
-        click.echo(f"❌ Failed to login: {e}")
-        sys.exit(1)
+        raise click.UsageError(f"❌ Failed to login: {e}")
