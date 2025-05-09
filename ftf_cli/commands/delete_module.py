@@ -101,8 +101,8 @@ def delete_module(intent, flavor, version, profile, stage):
             )
         return
 
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
         raise click.UsageError(
-            f"❌ Error encountered while deleting module with intent {intent} flavor {flavor} version {version}"
+            f"❌ Error encountered while deleting module with intent {intent} flavor {flavor} version {version}: {e}"
         )
