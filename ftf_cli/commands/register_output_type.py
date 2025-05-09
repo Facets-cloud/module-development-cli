@@ -2,7 +2,7 @@ import os
 import click
 import requests
 import yaml
-
+from requests import JSONDecodeError
 from ftf_cli.utils import is_logged_in
 
 
@@ -107,7 +107,7 @@ def register_output_type(yaml_path, profile, inferred_from_module):
                 error_json = response.json()
                 if "message" in error_json:
                     error_message = error_json["message"]
-            except:
+            except JSONDecodeError:
                 pass
             raise click.UsageError(
                 f"❌ Failed to register output type. Status code: {response.status_code}, Error: {error_message}"

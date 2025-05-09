@@ -157,8 +157,7 @@ def add_input(path, profile, name, display_name, description, output_type):
 
         click.echo(f"✅ Input added to the {facets_yaml}.")
 
-    except Exception as e:
-        click.echo(f"❌ Error encounter while adding input {name}: {e}")
+    except Exception:
         traceback.print_exc()
         raise click.UsageError(f"❌ Error encountered while adding input {name}")
 

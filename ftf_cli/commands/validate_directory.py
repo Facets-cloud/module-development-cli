@@ -111,7 +111,7 @@ def validate_directory(path, check_only, skip_terraform_validation):
                     click.echo(
                         f"Check: {check.check_id}, Severity: {check.severity}, File: {check.file_path}, Line: {check.file_line}"
                     )
-            raise Exception("Checkov validation did not pass.")
+            raise click.UsageError("Checkov validation did not pass.")
         else:
             click.echo("✅ Checkov validation passed.")
 

@@ -155,8 +155,9 @@ def expose_provider(path, name, source, version, attributes, output):
         click.echo(f"✅ Sucessfully exposed the provider {name} in output {output}")
 
     except Exception as e:
-        click.echo(f"❌ Error encounter while adding provider {name}: {e}")
-        raise click.UsageError(f"❌ Error encountered while adding provider {name}")
+        raise click.UsageError(
+            f"❌ Error encountered while adding provider {name}: {e}"
+        )
 
 
 def generate_default_output(output_type):
@@ -183,7 +184,7 @@ def prompt_user_for_output_selection(obj, attribute, is_root=False):
 
     # if selected object is empty object
     if nested_obj == {}:
-        raise Exception(
+        raise click.UsageError(
             f"❌ Selected object {selected_output} does not expose any fields."
         )
 

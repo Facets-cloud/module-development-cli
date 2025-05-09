@@ -67,6 +67,7 @@ def get_output_lookup_tree(profile, output):
                 f"❌ Failed to fetch output types. Status code: {response.status_code}"
             )
     except Exception as e:
-        click.echo(f"❌ An error occurred: {e}")
         traceback.print_exc()
-        raise click.UsageError(f"❌ An error occurred while getting output details")
+        raise click.UsageError(
+            f"❌ An error occurred while getting output details: {e}"
+        )
