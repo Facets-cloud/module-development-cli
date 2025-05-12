@@ -20,7 +20,7 @@ yaml_schema = {
                 ".*": {
                     "type": "object",
                     "properties": {
-                        "type": {"type": "string", "pattern": "^@outputs?/.+"},
+                        "type": {"type": "string", "pattern": "^@[a-z0-9-_]+\/[a-z0-9-_]+"},
                         "providers": {
                             "type": "object",
                             "patternProperties": {
@@ -49,7 +49,7 @@ yaml_schema = {
                 ".*": {
                     "type": "object",
                     "properties": {
-                        "type": {"type": "string", "pattern": "^@outputs?/.+"},
+                        "type": {"type": "string", "pattern": "^@[a-z0-9-_]+\/[a-z0-9-_]+"},
                         "providers": {"type": "array", "items": {"type": "string"}},
                     },
                     "required": ["type"],
@@ -97,7 +97,7 @@ spec_schema = {
     "$id": "http://example.com/root.json",
     "type": "object",
     "properties": {
-        "x-ui-output-type": {"type": "string", "pattern": "^@outputs?/.+"},
+        "x-ui-output-type": {"type": "string", "pattern": "^@[a-z0-9-_]+\/[a-z0-9-_]+"},
         "x-ui-variable-ref": {"type": "boolean"},
         "x-ui-secret-ref": {"type": "boolean"},
         "x-ui-dynamic-enum": {
