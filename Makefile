@@ -26,15 +26,13 @@ ifeq ($(OS),Windows)
 	@if not exist env\Scripts\activate ( \
 		echo "Virtual environment creation failed. Check Python installation." && exit 1 \
 	)
-	$(PYTHON_EXE) -m pip install --upgrade pip && \
-	$(PIP) install -r requirements.txt
+	$(PYTHON_EXE) -m pip install --upgrade pip
 else
 	"$(PYTHON)" -m venv env
 	@if [ ! -f "./env/bin/activate" ]; then \
 		echo "Virtual environment creation failed. Check Python installation." && exit 1; \
 	fi
-	$(PYTHON_EXE) -m pip install --upgrade pip && \
-	$(PIP) install -r requirements.txt
+	$(PYTHON_EXE) -m pip install --upgrade pip
 endif
 
 install:
