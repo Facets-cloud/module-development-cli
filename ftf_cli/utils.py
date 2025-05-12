@@ -290,20 +290,18 @@ def validate_yaml(data):
         if spec_obj:
             check_no_array_or_invalid_pattern_in_spec(spec_obj)
     except jsonschema.exceptions.ValidationError as e:
-        print(e)
         raise click.UsageError(
-            f"❌ facets.yaml is not following Facets Schema: {e.message}"
+            f"❌ facets.yaml is not following Facets Schema: {e}"
         )
 
     try:
         validate(instance=spec_obj, schema=spec_schema)
     except jsonschema.exceptions.ValidationError as e:
-        print(e)
         raise click.UsageError(
-            f"❌ facets.yaml spec is not following Facets Schema: {e.message}"
+            f"❌ facets.yaml spec is not following Facets Schema: {e}"
         )
 
-    print("Facets YAML validation successful!")
+    click.echo("✅ Facets YAML validation successful!")
     return True
 
 
