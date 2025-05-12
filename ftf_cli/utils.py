@@ -9,7 +9,7 @@ import click
 import hcl2
 import requests
 import hcl
-from ftf_cli.schema import yaml_schema, spec_schema
+
 
 ALLOWED_TYPES = ["string", "number", "boolean", "enum"]
 REQUIRED_TF_FACETS_VARS = ["instance", "instance_name", "environment", "inputs"]
@@ -203,6 +203,7 @@ def update_spec_variable(
     terraform_file_path: str,
     instance_description: str,
 ):
+
     with open(terraform_file_path, "r") as file:
         terraform_code = file.read()
         file.close()
@@ -252,6 +253,97 @@ def update_spec_variable(
         return
 
 
+yaml_schema = {
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "intent": {"type": "string"},
+        "flavor": {"type": "string"},
+        "version": {"type": "string"},
+        "description": {"type": "string"},
+        "clouds": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["aws", "azure", "gcp", "kubernetes"]},
+        },
+        "spec": jsonschema.Draft7Validator.META_SCHEMA,
+        "outputs": {
+            "type": "object",
+            "patternProperties": {
+                ".*": {
+                    "type": "object",
+                    "properties": {
+                        "type": {"type": "string", "pattern": "^@outputs?/.+"},
+                        "providers": {
+                            "type": "object",
+                            "patternProperties": {
+                                ".*": {
+                                    "type": "object",
+                                    "properties": {
+                                        "source": {"type": "string"},
+                                        "version": {"type": "string"},
+                                        "attributes": {
+                                            "type": "object",
+                                            "additionalProperties": True,
+                                        },
+                                    },
+                                    "required": ["source", "version", "attributes"],
+                                }
+                            },
+                        },
+                    },
+                    "required": ["type"],
+                }
+            },
+        },
+        "inputs": {
+            "type": "object",
+            "patternProperties": {
+                ".*": {
+                    "type": "object",
+                    "properties": {
+                        "type": {"type": "string", "pattern": "^@outputs?/.+"},
+                        "providers": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["type"],
+                }
+            },
+        },
+        "sample": {
+            "type": "object",
+            "properties": {
+                "kind": {"type": "string"},
+                "flavor": {"type": "string"},
+                "version": {"type": "string"},
+                "spec": {"type": "object"},
+            },
+            "required": ["kind", "flavor", "version", "spec"],
+        },
+        "artifact_inputs": {
+            "type": "object",
+            "properties": {
+                "primary": {
+                    "type": "object",
+                    "properties": {
+                        "attribute_path": {
+                            "type": "string",
+                            "pattern": r"^spec\.[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*$",
+                        },
+                        "artifact_type": {
+                            "type": "string",
+                            "enum": ["docker_image", "freestyle"],
+                        },
+                    },
+                    "required": ["attribute_path", "artifact_type"],
+                }
+            },
+            "required": ["primary"],
+        },
+        "metadata": jsonschema.Draft7Validator.META_SCHEMA,
+    },
+    "required": ["intent", "flavor", "version", "description", "spec", "clouds"],
+}
+
+
 def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
     """
     Recursively check that no field in spec is of type 'array'.
@@ -283,25 +375,18 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
 
 
 def validate_yaml(data):
-    spec_obj = data.get("spec")
     try:
         validate(instance=data, schema=yaml_schema)
         # Additional check for arrays and invalid patternProperties in spec
+        spec_obj = data.get("spec")
         if spec_obj:
             check_no_array_or_invalid_pattern_in_spec(spec_obj)
     except jsonschema.exceptions.ValidationError as e:
+        print(e)
         raise click.UsageError(
-            f"Validation error in `facets.yaml`: `facets.yaml` is not following Facets Schema: {e}"
+            f"❌ facets.yaml is not following Facets Schema: {e.message}"
         )
-
-    try:
-        validate(instance=spec_obj, schema=spec_schema)
-    except jsonschema.exceptions.ValidationError as e:
-        raise click.UsageError(
-            f"Validation error in `facets.yaml`: `x-ui` tags are invalid. Details: {e}"
-        )
-
-    click.echo("✅ Facets YAML validation successful!")
+    print("Facets YAML validation successful!")
     return True
 
 

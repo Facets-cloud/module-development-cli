@@ -2,11 +2,13 @@ OS := $(shell uname -s 2>/dev/null || echo Windows)
 
 ifeq ($(OS),Windows)
   PYTHON := $(shell where python3 2>NUL || echo "")
+  ACTIVATE := env\Scripts\activate
   PYTHON_EXE := env\Scripts\python.exe
   PIP := env\Scripts\pip.exe
   PYTEST := env\Scripts\pytest.exe
 else
   PYTHON := $(shell which python3 2>/dev/null || echo "")
+  ACTIVATE := source ./env/bin/activate
   PYTHON_EXE := ./env/bin/python3
   PIP := ./env/bin/pip
   PYTEST := ./env/bin/pytest
@@ -24,13 +26,15 @@ ifeq ($(OS),Windows)
 	@if not exist env\Scripts\activate ( \
 		echo "Virtual environment creation failed. Check Python installation." && exit 1 \
 	)
-	$(PYTHON_EXE) -m $(PIP) install --upgrade pip
+	$(PYTHON_EXE) -m pip install --upgrade pip && \
+	$(PIP) install -r requirements.txt
 else
 	"$(PYTHON)" -m venv env
 	@if [ ! -f "./env/bin/activate" ]; then \
 		echo "Virtual environment creation failed. Check Python installation." && exit 1; \
 	fi
-	$(PYTHON_EXE) -m $(PIP) install --upgrade pip
+	$(PYTHON_EXE) -m pip install --upgrade pip && \
+	$(PIP) install -r requirements.txt
 endif
 
 install:
@@ -38,12 +42,12 @@ ifeq ($(OS),Windows)
 	@if not exist env\Scripts\pip.exe ( \
 		echo "Virtual environment not found. Run 'make setup' first." && exit 1 \
 	)
-	$(PIP) install .
+	$(ACTIVATE) && $(PIP) install .
 else
 	@if [ ! -f "./env/bin/pip" ]; then \
 		echo "Virtual environment not found. Run 'make setup' first." && exit 1; \
 	fi
-	$(PIP) install .
+	$(ACTIVATE) && pip install .
 endif
 
 dev:
@@ -51,12 +55,12 @@ ifeq ($(OS),Windows)
 	@if not exist env\Scripts\pip.exe ( \
 		echo "Virtual environment not found. Run 'make setup' first." && exit 1 \
 	)
-	$(PIP) install -e ".[dev]"
+	$(ACTIVATE) && $(PIP) install -e ".[dev]"
 else
 	@if [ ! -f "./env/bin/pip" ]; then \
 		echo "Virtual environment not found. Run 'make setup' first." && exit 1; \
 	fi
-	$(PIP) install -e ".[dev]"
+	$(ACTIVATE) && pip install -e ".[dev]"
 endif
 
 test:
@@ -64,49 +68,49 @@ ifeq ($(OS),Windows)
 	@if not exist env\Scripts\pip ( \
 		echo "Virtual environment not found. Run 'make setup' first." && exit 1 \
 	)
-	$(PYTEST) tests
+	$(ACTIVATE) && $(PYTEST) tests
 else
 	@if [ ! -f "./env/bin/pip" ]; then \
 		echo "Virtual environment not found. Run 'make setup' first." && exit 1; \
 	fi
-	$(PYTEST) tests
+	$(ACTIVATE) && $(PYTEST) tests
 endif
 
 test-unit:
 ifeq ($(OS),Windows)
-	$(PYTEST) tests/test_*.py
+	$(ACTIVATE) && $(PYTEST) tests/test_*.py
 else
-	$(PYTEST) tests/test_*.py
+	$(ACTIVATE) && $(PYTEST) tests/test_*.py
 endif
 
 test-commands:
 ifeq ($(OS),Windows)
-	$(PYTEST) tests/commands/
+	$(ACTIVATE) && $(PYTEST) tests/commands/
 else
-	$(PYTEST) tests/commands/
+	$(ACTIVATE) && $(PYTEST) tests/commands/
 endif
 
 test-integration:
 ifeq ($(OS),Windows)
-	$(PYTEST) tests/integration/
+	$(ACTIVATE) && $(PYTEST) tests/integration/
 else
-	$(PYTEST) tests/integration/
+	$(ACTIVATE) && $(PYTEST) tests/integration/
 endif
 
 lint:
 ifeq ($(OS),Windows)
-	$(PIP) install flake8 && \
+	$(ACTIVATE) && $(PIP) install flake8 && \
 	env\Scripts\flake8 ftf_cli tests
 else
-	(PIP) install flake8 && flake8 ftf_cli tests
+	$(ACTIVATE) && pip install flake8 && flake8 ftf_cli tests
 endif
 
 format:
 ifeq ($(OS),Windows)
-	$(PIP) install black && \
+	$(ACTIVATE) && $(PIP) install black && \
 	env\Scripts\black ftf_cli tests
 else
-	$(PIP) install black && black ftf_cli tests
+	$(ACTIVATE) && pip install black && black ftf_cli tests
 endif
 
 clean:
