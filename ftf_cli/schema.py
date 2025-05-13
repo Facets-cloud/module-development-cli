@@ -117,7 +117,6 @@ spec_schema = {
                 "field": {"type": "string", "pattern": "^spec\..+"},
                 "values": {
                     "type": "array",
-                    "items": {"type": "string"},
                     "minItems": 1,
                 },
             },
