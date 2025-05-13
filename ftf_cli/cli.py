@@ -11,6 +11,8 @@ from ftf_cli.commands.get_output_types import get_output_types
 from ftf_cli.commands.get_output_details import get_output_lookup_tree
 from ftf_cli.commands.validate_facets import validate_facets
 from ftf_cli.commands.register_output_type import register_output_type
+from ftf_cli.commands.add_import import add_import
+from ftf_cli.commands.get_resources import get_resources
 
 
 @click.group()
@@ -19,6 +21,7 @@ def cli():
     pass
 
 
+cli.add_command(add_import)
 cli.add_command(add_input)
 cli.add_command(add_variable)
 cli.add_command(delete_module)
@@ -31,3 +34,4 @@ cli.add_command(preview_module)
 cli.add_command(register_output_type)
 cli.add_command(validate_directory)
 cli.add_command(validate_facets)
+cli.add_command(get_resources)
