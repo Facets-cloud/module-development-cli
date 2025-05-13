@@ -9,7 +9,7 @@ import click
 import hcl2
 import requests
 import hcl
-from ftf_cli.schema import yaml_schema, spec_schema
+from ftf_cli.schema import yaml_schema, spec_schema, additional_properties_schema
 
 ALLOWED_TYPES = ["string", "number", "boolean", "enum"]
 REQUIRED_TF_FACETS_VARS = ["instance", "instance_name", "environment", "inputs"]
@@ -299,6 +299,13 @@ def validate_yaml(data):
     except jsonschema.exceptions.ValidationError as e:
         raise click.UsageError(
             f"Validation error in `facets.yaml`: `x-ui` tags are invalid. Details: {e}"
+        )
+
+    try:
+        validate(instance=spec_obj, schema=additional_properties_schema)
+    except jsonschema.exceptions.ValidationError as e:
+        raise click.UsageError(
+            f"Validation error in `facets.yaml`: Field additionalProperties is not allowed under any object."
         )
 
     click.echo("✅ Facets YAML validation successful!")

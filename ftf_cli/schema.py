@@ -94,10 +94,9 @@ yaml_schema = {
 # Define a separate schema for the `spec` field
 spec_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "http://example.com/root.json",
     "type": "object",
     "properties": {
-        "x-ui-output-type": {"type": "string", "pattern": "^@[a-z0-9-_]+\/[a-z0-9-_]+"},
+        "x-ui-output-type": {"type": "string"},
         "x-ui-variable-ref": {"type": "boolean"},
         "x-ui-secret-ref": {"type": "boolean"},
         "x-ui-dynamic-enum": {
@@ -125,5 +124,37 @@ spec_schema = {
             "required": ["field", "values"],
         },
     },
-    "additionalProperties": {"patternProperties": {".*": {"$ref": "#"}}},
+    "additionalProperties": {
+        "patternProperties": {
+            "^(?!x-ui).*": {
+                "if": {
+                    "type": "object"
+                },
+                "then": {
+                    "$ref": "#"
+                },
+                "else": {}
+            }
+        }
+    },
+}
+
+additional_properties_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {},
+    "not": {"required": ["additionalProperties"]},
+    "additionalProperties": {
+        "patternProperties": {
+            "^(?!x-ui).*": {
+                "if": {
+                    "type": "object"
+                },
+                "then": {
+                    "$ref": "#"
+                },
+                "else": {}
+            }
+        }
+    }
 }
