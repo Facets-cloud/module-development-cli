@@ -20,7 +20,10 @@ yaml_schema = {
                 ".*": {
                     "type": "object",
                     "properties": {
-                        "type": {"type": "string", "pattern": "^@[a-z0-9-_]+\/[a-z0-9-_]+"},
+                        "type": {
+                            "type": "string",
+                            "pattern": "^@[a-z0-9-_]+\/[a-z0-9-_]+",
+                        },
                         "providers": {
                             "type": "object",
                             "patternProperties": {
@@ -49,7 +52,10 @@ yaml_schema = {
                 ".*": {
                     "type": "object",
                     "properties": {
-                        "type": {"type": "string", "pattern": "^@[a-z0-9-_]+\/[a-z0-9-_]+"},
+                        "type": {
+                            "type": "string",
+                            "pattern": "^@[a-z0-9-_]+\/[a-z0-9-_]+",
+                        },
                         "providers": {"type": "array", "items": {"type": "string"}},
                     },
                     "required": ["type"],
@@ -125,15 +131,7 @@ spec_schema = {
     },
     "additionalProperties": {
         "patternProperties": {
-            "^(?!x-ui).*": {
-                "if": {
-                    "type": "object"
-                },
-                "then": {
-                    "$ref": "#"
-                },
-                "else": {}
-            }
+            "^(?!x-ui).*": {"if": {"type": "object"}, "then": {"$ref": "#"}, "else": {}}
         }
     },
 }
@@ -145,15 +143,7 @@ additional_properties_schema = {
     "not": {"required": ["additionalProperties"]},
     "additionalProperties": {
         "patternProperties": {
-            "^(?!x-ui).*": {
-                "if": {
-                    "type": "object"
-                },
-                "then": {
-                    "$ref": "#"
-                },
-                "else": {}
-            }
+            "^(?!x-ui).*": {"if": {"type": "object"}, "then": {"$ref": "#"}, "else": {}}
         }
-    }
+    },
 }
