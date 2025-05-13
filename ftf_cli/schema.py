@@ -24,6 +24,7 @@ yaml_schema = {
                             "type": "string",
                             "pattern": "^@[a-z0-9-_]+\/[a-z0-9-_]+",
                         },
+                        "title": {"type": "string"},
                         "providers": {
                             "type": "object",
                             "patternProperties": {
