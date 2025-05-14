@@ -247,7 +247,7 @@ def preview_module(
             facets_data["version"] = original_version
             facets_data["sample"]["version"] = original_sample_version
             with open(yaml_file, "w") as file:
-                yaml.dump(facets_data, file)
+                yaml.dump(facets_data, file, sort_keys=False)
                 file.close()
             click.echo(f"Version reverted to: {original_version}")
             click.echo(f"Sample version reverted to: {original_sample_version}")
