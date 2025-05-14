@@ -266,11 +266,6 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
     for key, value in spec_obj.items():
         if isinstance(value, dict):
             field_type = value.get("type")
-            if field_type == "array":
-                raise click.UsageError(
-                    f"Invalid array type found at {path}.{key}. "
-                    f"Arrays are not allowed in spec. Use patternProperties for array-like structures instead."
-                )
             if "patternProperties" in value:
                 pp = value["patternProperties"]
                 for pattern_key, pp_val in pp.items():
