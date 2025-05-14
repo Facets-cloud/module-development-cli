@@ -9,7 +9,7 @@ setup(
         'Click',
         'Jinja2',
         'PyYAML',
-        'checkov',
+        'checkov==3.2.414',
         'jsonschema',
         'requests',
         'questionary',
