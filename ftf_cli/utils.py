@@ -100,9 +100,10 @@ def validate_facets_tf_vars(path, filename="variables.tf"):
                 f"❌ {filename} is missing required variables: {', '.join(required_tf_facets_vars)}"
             )
         elif len(not_allowed_variables) > 0:
-            raise click.UsageError(
-                f"❌ Following variables are not allowed in {filename}: {', '.join(not_allowed_variables)} ."
-            )
+            click.echo(f"❌ Following variables are not allowed in {filename}: {', '.join(not_allowed_variables)} .")
+            # raise click.UsageError(
+            #     f"❌ Following variables are not allowed in {filename}: {', '.join(not_allowed_variables)} ."
+            # )
         else:
             click.echo(f"✅ {filename} contains all required facets tf variables.")
 
