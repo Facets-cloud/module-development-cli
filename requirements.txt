@@ -1,9 +1,0 @@
-click
-PyYAML
-Jinja2
-git+https://github.com/Facets-cloud/python-hcl2.git
-jsonschema
-requests
-checkov
-questionary
-pytest-mock

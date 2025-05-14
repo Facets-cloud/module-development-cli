@@ -13,7 +13,7 @@ setup(
         'jsonschema',
         'requests',
         'questionary',
-        'python-hcl2 @ git+https://github.com/Facets-cloud/python-hcl2.git@main',
+        'facets-hcl',
     ],
     entry_points='''
         [console_scripts]
