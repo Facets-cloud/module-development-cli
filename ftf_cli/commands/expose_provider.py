@@ -58,7 +58,7 @@ def expose_provider(path, name, source, version, attributes, output):
 
     try:
         facets_yaml_path = os.path.join(path, "facets.yaml")
-        output_file = os.path.join(path, "output.tf")
+        output_file = os.path.join(path, "outputs.tf")
 
         if not (os.path.exists(output_file) and os.path.exists(facets_yaml_path)):
             click.echo(
@@ -203,7 +203,7 @@ def prompt_user_for_output_selection(obj, attribute, is_root=False):
 
 def generate_output_lookup(path):
     """Generate output lookup tree"""
-    output_file = os.path.join(path, "output.tf")
+    output_file = os.path.join(path, "outputs.tf")
     if not os.path.exists(output_file):
         click.echo(
             f"⚠️: {output_file} not found. Cannot expose providers if outputs are not defined."

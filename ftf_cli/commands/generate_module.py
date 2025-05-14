@@ -21,7 +21,7 @@ def generate_module(path, intent, flavor, cloud, title, description):
     env = Environment(loader=FileSystemLoader(str(templates_path)))
 
     # Render and write templates
-    for template_name in ['main.tf.j2', 'variables.tf.j2', 'output.tf.j2', 'facets.yaml.j2']:
+    for template_name in ['main.tf.j2', 'variables.tf.j2', 'outputs.tf.j2', 'facets.yaml.j2']:
         template = env.get_template(template_name)
         rendered_content = template.render(intent=intent, flavor=flavor, cloud=cloud, title=title,
                                            description=description)

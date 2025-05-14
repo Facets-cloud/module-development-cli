@@ -30,7 +30,7 @@ def validate_facets_yaml(path):
     return yaml_path
 
 def generate_output_tree(obj):
-    """ Generate a JSON schema from a output.tf file. """
+    """ Generate a JSON schema from a outputs.tf file. """
     if isinstance(obj, dict):
         transformed = {}
         for key, value in obj.items():
