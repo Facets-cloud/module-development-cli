@@ -266,10 +266,11 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
     for key, value in spec_obj.items():
         if isinstance(value, dict):
             field_type = value.get("type")
-            if field_type == "array":
+            override_flag = value.get("x-ui-override-disable", False)
+            if field_type == "array" and not override_flag:
                 raise click.UsageError(
                     f"Invalid array type found at {path}.{key}. "
-                    f"Arrays are not allowed in spec. Use patternProperties for array-like structures instead."
+                    f"Arrays without x-ui-override-disable field are not allowed in spec. Use patternProperties for array-like structures instead or set x-ui-override-disable field to true."
                 )
             if "patternProperties" in value:
                 pp = value["patternProperties"]
