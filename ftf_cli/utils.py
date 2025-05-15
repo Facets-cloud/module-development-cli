@@ -205,7 +205,6 @@ def update_spec_variable(
 ):
     with open(terraform_file_path, "r") as file:
         terraform_code = file.read()
-        file.close()
 
     spec = {"spec": yaml_file.get("spec", {})}
     type_tree = generate_type_tree(spec)
@@ -247,7 +246,6 @@ def update_spec_variable(
     with open(terraform_file_path, "w") as file:
         new_content = hcl.writes(start_node)
         file.write(new_content)
-        file.close()
         ensure_formatting_for_object(terraform_file_path)
         return
 

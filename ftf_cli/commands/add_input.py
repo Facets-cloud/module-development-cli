@@ -71,7 +71,6 @@ def add_input(path, profile, name, display_name, description, output_type):
 
         with open(facets_yaml, "r") as file:
             facets_data = yaml.safe_load(file)
-            file.close()
 
         required_inputs = facets_data.get("inputs", {})
         required_inputs_map = {}
@@ -153,7 +152,6 @@ def add_input(path, profile, name, display_name, description, output_type):
         # write facets yaml data to file
         with open(facets_yaml, "w") as file:
             yaml.dump(facets_data, file, sort_keys=False)
-            file.close()
 
         click.echo(f"✅ Input added to the {facets_yaml}.")
 
@@ -209,11 +207,9 @@ def replace_inputs_variable(file_path, new_inputs_block):
         content = file.read()
         if not content.endswith("\n"):
             file.write("\n")
-        file.close()
 
     with open(file_path, "r") as file:
         start_node = hcl.parse(file)
-        file.close()
 
     new_start_node = hcl.parses(new_inputs_block)
 
@@ -250,4 +246,3 @@ def replace_inputs_variable(file_path, new_inputs_block):
     with open(file_path, "w") as file:
         new_content = hcl.writes(body_node)
         file.write(new_content)
-        file.close()

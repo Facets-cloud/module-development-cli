@@ -157,7 +157,6 @@ def preview_module(
         # Write modified version back to facets.yaml
         with open(yaml_file, "w") as file:
             yaml.dump(facets_data, file, sort_keys=False)
-            file.close()
 
     # Add validated files information to facets_data
     facets_data["iac"] = {"validated_files": VALIDATED_FILES}
@@ -165,7 +164,6 @@ def preview_module(
     # Write the updated facets.yaml with validated files
     with open(yaml_file, "w") as file:
         yaml.dump(facets_data, file, sort_keys=False)
-        file.close()
 
     control_plane_url = credentials["control_plane_url"]
     username = credentials["username"]
@@ -247,8 +245,7 @@ def preview_module(
             facets_data["version"] = original_version
             facets_data["sample"]["version"] = original_sample_version
             with open(yaml_file, "w") as file:
-                yaml.dump(facets_data, file)
-                file.close()
+                yaml.dump(facets_data, file, sort_keys=False)
             click.echo(f"Version reverted to: {original_version}")
             click.echo(f"Sample version reverted to: {original_sample_version}")
 

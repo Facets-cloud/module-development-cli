@@ -67,7 +67,6 @@ def expose_provider(path, name, source, version, attributes, output):
 
         with open(facets_yaml_path, "r") as file:
             facets_yaml = yaml.safe_load(file)
-            file.close()
 
         # Get outputs declared in facets yaml
         outputs = facets_yaml.get("outputs")
@@ -150,7 +149,6 @@ def expose_provider(path, name, source, version, attributes, output):
 
         with open(facets_yaml_path, "w") as file:
             yaml.dump(facets_yaml, file, default_flow_style=False, sort_keys=False)
-            file.close()
 
         click.echo(f"✅ Sucessfully exposed the provider {name} in output {output}")
 
@@ -213,7 +211,6 @@ def generate_output_lookup(path):
 
     with open(output_file, "r") as file:
         parsed_outputs = hcl2.load(file)
-        file.close()
 
     locals = parsed_outputs.get("locals", [{}])[0]
     output_interfaces = locals.get("output_interfaces", [{}])[0]
