@@ -9,9 +9,6 @@ import yaml
 import hcl2
 import json
 
-VALIDATED_FILES = ["variables.tf"]
-
-
 @click.command()
 @click.argument("path", type=click.Path(exists=True))
 @click.option(
@@ -157,9 +154,6 @@ def preview_module(
         # Write modified version back to facets.yaml
         with open(yaml_file, "w") as file:
             yaml.dump(facets_data, file, sort_keys=False)
-
-    # Add validated files information to facets_data
-    facets_data["iac"] = {"validated_files": VALIDATED_FILES}
 
     # Write the updated facets.yaml with validated files
     with open(yaml_file, "w") as file:
