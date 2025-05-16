@@ -13,7 +13,7 @@ yaml_schema = {
             "type": "array",
             "items": {"type": "string", "enum": ["aws", "azure", "gcp", "kubernetes"]},
         },
-        "spec": Draft7Validator.META_SCHEMA,  # Use the nested object schema
+        "spec": {},  # Use the nested object schema
         "outputs": {
             "type": "object",
             "patternProperties": {
