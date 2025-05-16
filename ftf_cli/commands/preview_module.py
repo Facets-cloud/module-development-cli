@@ -160,7 +160,7 @@ def preview_module(
             file.close()
 
     # Add validated files information to facets_data
-    facets_data["iac"] = {"validated_files": VALIDATED_FILES}
+    # facets_data["iac"] = {"validated_files": VALIDATED_FILES}
 
     # Write the updated facets.yaml with validated files
     with open(yaml_file, "w") as file:
