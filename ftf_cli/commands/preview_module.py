@@ -1,6 +1,6 @@
 import os
 import click
-from ftf_cli.utils import is_logged_in, validate_boolean, generate_output_tree
+from ftf_cli.utils import is_logged_in, validate_boolean, generate_output_lookup_tree
 from ftf_cli.commands.validate_directory import validate_directory
 
 import subprocess
@@ -96,7 +96,7 @@ def preview_module(
                 }
             }
 
-            transformed_output = generate_output_tree(output)
+            transformed_output = generate_output_lookup_tree(output)
 
             # Save the transformed output to output-lookup-tree.json
             with open(output_json_path, "w") as file:

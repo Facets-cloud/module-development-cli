@@ -110,6 +110,24 @@ def generate_output_tree(obj):
         return {"type": "any"}  # Catch unexpected types
 
 
+def generate_output_lookup_tree(obj):
+    """Generate a JSON schema from a outputs.tf file."""
+    if isinstance(obj, dict):
+        transformed = {}
+        for key, value in obj.items():
+            transformed[key] = generate_output_lookup_tree(value)
+        return transformed
+    elif isinstance(obj, list):
+        if len(obj) > 0:
+            return {"type": "array", "items": generate_output_lookup_tree(obj[0])}
+        else:
+            return {"type": "array"}  # No "items" if unknown
+    elif isinstance(obj, (int, float, bool, str)):
+        return {}
+    else:
+        return {}  # Catch unexpected types
+
+
 def transform_output_tree(tree, level=1):
     """Recursively transform the output tree into a Terraform-compatible schema with proper indentation."""
     INDENT = "  "  # Fixed indentation (2 spaces)
