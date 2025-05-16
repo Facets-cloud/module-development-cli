@@ -111,7 +111,7 @@ def generate_output_tree(obj):
 
 
 def generate_output_lookup_tree(obj):
-    """Generate a JSON schema from a outputs.tf file."""
+    """Generate a lookup tree to support $ referencing in the control-plane. """
     if isinstance(obj, dict):
         transformed = {}
         for key, value in obj.items():
