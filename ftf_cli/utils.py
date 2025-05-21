@@ -347,6 +347,66 @@ def store_credentials(profile, credentials):
         config.write(configfile)
 
 
+def set_default_profile(profile):
+    """Set the default profile to use for all commands.
+    
+    This creates a config file at ~/.facets/config that stores the default profile.
+    The environment variable FACETS_PROFILE takes precedence over this.
+    
+    Args:
+        profile (str): The profile name to set as default
+    """
+    config = configparser.ConfigParser()
+    config_path = os.path.expanduser("~/.facets/config")
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    
+    if os.path.exists(config_path):
+        config.read(config_path)
+    
+    if 'default' not in config:
+        config['default'] = {}
+    
+    config['default']['profile'] = profile
+    
+    with open(config_path, "w") as configfile:
+        config.write(configfile)
+
+
+def get_default_profile():
+    """Get the default profile from the config file.
+    
+    Returns:
+        str: The default profile name or 'default' if not set
+    """
+    config = configparser.ConfigParser()
+    config_path = os.path.expanduser("~/.facets/config")
+    
+    if os.path.exists(config_path):
+        config.read(config_path)
+        if 'default' in config and 'profile' in config['default']:
+            return config['default']['profile']
+    
+    return "default"
+
+
+def get_profile_with_priority():
+    """Get the profile to use with proper priority:
+    1. FACETS_PROFILE environment variable if set
+    2. Default profile from config file if it exists
+    3. 'default' as fallback
+    
+    Returns:
+        str: The profile name to use
+    """
+    # Check environment variable first
+    env_profile = os.getenv("FACETS_PROFILE")
+    if env_profile:
+        return env_profile
+    
+    # Then check config file
+    return get_default_profile()
+
+
 def is_logged_in(profile):
     config = configparser.ConfigParser()
     cred_path = os.path.expanduser("~/.facets/credentials")

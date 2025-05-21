@@ -1,6 +1,6 @@
 import os
 import click
-from ftf_cli.utils import is_logged_in, validate_boolean, generate_output_lookup_tree
+from ftf_cli.utils import is_logged_in, validate_boolean, generate_output_lookup_tree, get_profile_with_priority
 from ftf_cli.commands.validate_directory import validate_directory
 
 import subprocess
@@ -14,8 +14,8 @@ import json
 @click.option(
     "-p",
     "--profile",
-    default=lambda: os.getenv("FACETS_PROFILE", "default"),
-    help="The profile name to use or defaults to environment variable FACETS_PROFILE if set",
+    default=get_profile_with_priority,
+    help="The profile name to use (defaults to the current default profile)",
 )
 @click.option(
     "-a",
@@ -305,5 +305,5 @@ def preview_module(
         raise click.UsageError(f"❌ Failed to Publish module: {e}")
 
 
-if __name__ == "__main__":
-    preview_module()
+# if __name__ == "__main__":
+#     preview_module()
