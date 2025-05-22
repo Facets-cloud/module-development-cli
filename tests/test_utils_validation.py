@@ -17,11 +17,11 @@ def test_array_type_raises():
 
 
 def test_pattern_properties_value_not_dict_raises():
-    spec = {"some_field": {"patternProperties": {"^pattern$": {"type": "string"}}}}
+    spec = {"some_field": {"patternProperties": {"^pattern$": {"type": "array"}}}}
     with pytest.raises(click.UsageError) as excinfo:
         check_no_array_or_invalid_pattern_in_spec(spec)
     assert (
-        'patternProperties at spec.some_field with pattern "^pattern$" must be of type object.'
+        'patternProperties at spec.some_field with pattern "^pattern$" must be of type object or string'
         in str(excinfo.value)
     )
 
