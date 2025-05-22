@@ -287,7 +287,7 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
             if field_type == "array" and not override_disable_flag and not overrides_only_flag:
                 raise click.UsageError(
                     f"Invalid array type found at {path}.{key}. "
-                    f"Arrays without x-ui-override-disable or x-ui-overrides-only field are not allowed in spec. Use patternProperties for array-like structures instead or set x-ui-override-disable field to true."
+                    f"Arrays without x-ui-override-disable or x-ui-overrides-only field are not allowed in spec. Use patternProperties for array-like structures instead or set either x-ui-override-disable or x-ui-overrides-only field to true."
                 )
             if "patternProperties" in value:
                 pp = value["patternProperties"]
