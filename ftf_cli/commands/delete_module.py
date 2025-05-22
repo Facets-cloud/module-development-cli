@@ -65,7 +65,7 @@ def delete_module(path, profile, cascade):
         if not click.confirm(
             f"Are you sure you want to delete {intent}/{flavor}/{version}?"
         ):
-            click.echo("Module deletion cancelled.")
+            click.echo("⚠️ Module deletion cancelled.")
             return
 
         # Construct URL with query parameters
