@@ -1,5 +1,4 @@
 import os
-import sys
 import click
 import requests
 
@@ -20,8 +19,9 @@ def get_output_types(profile):
         click.echo(f"Profile selected: {profile}")
         credentials = is_logged_in(profile)
         if not credentials:
-            click.echo(f"❌ Not logged in under profile {profile}. Please login first.")
-            sys.exit(1)
+            raise click.UsageError(
+                f"❌ Not logged in under profile {profile}. Please login first."
+            )
 
         # Extract credentials
         control_plane_url = credentials["control_plane_url"]
@@ -45,10 +45,8 @@ def get_output_types(profile):
             for output_type in registered_output_types:
                 click.echo(f"- {output_type}")
         else:
-            click.echo(
+            raise click.UsageError(
                 f"❌ Failed to fetch output types. Status code: {response.status_code}"
             )
-            sys.exit(1)
     except Exception as e:
-        click.echo(f"❌ An error occurred: {e}")
-        sys.exit(1)
+        raise click.UsageError(f"❌ An error occurred: {e}")

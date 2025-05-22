@@ -1,7 +1,6 @@
 import os
-import sys
 import click
-from ftf_cli.utils import is_logged_in, validate_boolean, generate_output_tree
+from ftf_cli.utils import is_logged_in, validate_boolean, generate_output_lookup_tree
 from ftf_cli.commands.validate_directory import validate_directory
 
 import subprocess
@@ -9,9 +8,6 @@ import getpass
 import yaml
 import hcl2
 import json
-
-VALIDATED_FILES = ["variables.tf"]
-
 
 @click.command()
 @click.argument("path", type=click.Path(exists=True))
@@ -97,7 +93,7 @@ def preview_module(
                 }
             }
 
-            transformed_output = generate_output_tree(output)
+            transformed_output = generate_output_lookup_tree(output)
 
             # Save the transformed output to output-lookup-tree.json
             with open(output_json_path, "w") as file:
@@ -114,8 +110,9 @@ def preview_module(
 
     credentials = is_logged_in(profile)
     if not credentials:
-        click.echo(f"❌ Not logged in under profile {profile}. Please login first.")
-        sys.exit(1)
+        raise click.UsageError(
+            f"❌ Not logged in under profile {profile}. Please login first."
+        )
 
     click.echo(f"Validating directory at {path}...")
 
@@ -127,8 +124,7 @@ def preview_module(
     try:
         validate_directory.invoke(ctx)
     except click.ClickException as e:
-        click.echo(f"❌ Validation failed: {e}")
-        sys.exit(1)
+        raise click.UsageError(f"❌ Validation failed: {e}")
 
     # Warn if GIT_REPO_URL and GIT_REF are considered local
     if not git_repo_url:
@@ -158,15 +154,10 @@ def preview_module(
         # Write modified version back to facets.yaml
         with open(yaml_file, "w") as file:
             yaml.dump(facets_data, file, sort_keys=False)
-            file.close()
-
-    # Add validated files information to facets_data
-    facets_data["iac"] = {"validated_files": VALIDATED_FILES}
 
     # Write the updated facets.yaml with validated files
     with open(yaml_file, "w") as file:
         yaml.dump(facets_data, file, sort_keys=False)
-        file.close()
 
     control_plane_url = credentials["control_plane_url"]
     username = credentials["username"]
@@ -248,8 +239,7 @@ def preview_module(
             facets_data["version"] = original_version
             facets_data["sample"]["version"] = original_sample_version
             with open(yaml_file, "w") as file:
-                yaml.dump(facets_data, file)
-                file.close()
+                yaml.dump(facets_data, file, sort_keys=False)
             click.echo(f"Version reverted to: {original_version}")
             click.echo(f"Sample version reverted to: {original_sample_version}")
 

@@ -1,7 +1,6 @@
 import json
 import re
 from subprocess import run
-import sys
 import traceback
 import click
 import os
@@ -57,24 +56,21 @@ def add_input(path, profile, name, display_name, description, output_type):
     """Add an existing registered output as a input in facets.yaml and populate the attributes in variables.tf exposed by selected output."""
 
     if run("terraform version", shell=True, capture_output=True).returncode != 0:
-        click.echo(
+        raise click.UsageError(
             "❌ Terraform is not installed. Please install Terraform to continue."
         )
-        sys.exit(1)
 
     # validate if facets.yaml and variables.tf exists
     facets_yaml = os.path.join(path, "facets.yaml")
     variable_file = os.path.join(path, "variables.tf")
     if not (os.path.exists(variable_file) and os.path.exists(facets_yaml)):
-        click.echo(
+        raise click.UsageError(
             f"❌ {variable_file} or {facets_yaml} not found. Run validate directory command to validate directory."
         )
-        sys.exit(1)
     try:
 
         with open(facets_yaml, "r") as file:
             facets_data = yaml.safe_load(file)
-            file.close()
 
         required_inputs = facets_data.get("inputs", {})
         required_inputs_map = {}
@@ -112,8 +108,9 @@ def add_input(path, profile, name, display_name, description, output_type):
         click.echo(f"Profile selected: {profile}")
         credentials = is_logged_in(profile)
         if not credentials:
-            click.echo(f"❌ Not logged in under profile {profile}. Please login first.")
-            sys.exit(1)
+            raise click.UsageError(
+                f"❌ Not logged in under profile {profile}. Please login first."
+            )
 
         # Extract credentials
         control_plane_url = credentials["control_plane_url"]
@@ -131,10 +128,9 @@ def add_input(path, profile, name, display_name, description, output_type):
 
         for output in required_inputs_map.values():
             if output not in registered_output_names:
-                click.echo(
+                raise click.UsageError(
                     f"❌ {output} not found in registered outputs. Please select a valid output type from {registered_output_names}."
                 )
-                sys.exit(1)
 
         # get output tree for each output
         output_trees = {}
@@ -156,14 +152,12 @@ def add_input(path, profile, name, display_name, description, output_type):
         # write facets yaml data to file
         with open(facets_yaml, "w") as file:
             yaml.dump(facets_data, file, sort_keys=False)
-            file.close()
 
         click.echo(f"✅ Input added to the {facets_yaml}.")
 
-    except Exception as e:
-        click.echo(f"❌ Error encounter while adding input {name}: {e}")
+    except Exception:
         traceback.print_exc()
-        sys.exit(1)
+        raise click.UsageError(f"❌ Error encountered while adding input {name}")
 
 
 def generate_inputs_variable(output_trees):
@@ -213,11 +207,9 @@ def replace_inputs_variable(file_path, new_inputs_block):
         content = file.read()
         if not content.endswith("\n"):
             file.write("\n")
-        file.close()
 
     with open(file_path, "r") as file:
         start_node = hcl.parse(file)
-        file.close()
 
     new_start_node = hcl.parses(new_inputs_block)
 
@@ -254,4 +246,3 @@ def replace_inputs_variable(file_path, new_inputs_block):
     with open(file_path, "w") as file:
         new_content = hcl.writes(body_node)
         file.write(new_content)
-        file.close()

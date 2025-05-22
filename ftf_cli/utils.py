@@ -12,7 +12,7 @@ import hcl
 import glob
 import re
 import sys
-
+from ftf_cli.schema import yaml_schema, spec_schema, additional_properties_schema
 
 ALLOWED_TYPES = ["string", "number", "boolean", "enum"]
 REQUIRED_TF_FACETS_VARS = ["instance", "instance_name", "environment", "inputs"]
@@ -113,6 +113,24 @@ def generate_output_tree(obj):
         return {"type": "any"}  # Catch unexpected types
 
 
+def generate_output_lookup_tree(obj):
+    """Generate a lookup tree to support $ referencing in the control-plane. """
+    if isinstance(obj, dict):
+        transformed = {}
+        for key, value in obj.items():
+            transformed[key] = generate_output_lookup_tree(value)
+        return transformed
+    elif isinstance(obj, list):
+        if len(obj) > 0:
+            return {"type": "array", "items": generate_output_lookup_tree(obj[0])}
+        else:
+            return {"type": "array"}  # No "items" if unknown
+    elif isinstance(obj, (int, float, bool, str)):
+        return {}
+    else:
+        return {}  # Catch unexpected types
+
+
 def transform_output_tree(tree, level=1):
     """Recursively transform the output tree into a Terraform-compatible schema with proper indentation."""
     INDENT = "  "  # Fixed indentation (2 spaces)
@@ -206,10 +224,8 @@ def update_spec_variable(
     terraform_file_path: str,
     instance_description: str,
 ):
-
     with open(terraform_file_path, "r") as file:
         terraform_code = file.read()
-        file.close()
 
     spec = {"spec": yaml_file.get("spec", {})}
     type_tree = generate_type_tree(spec)
@@ -251,100 +267,8 @@ def update_spec_variable(
     with open(terraform_file_path, "w") as file:
         new_content = hcl.writes(start_node)
         file.write(new_content)
-        file.close()
         ensure_formatting_for_object(terraform_file_path)
         return
-
-
-yaml_schema = {
-    "$schema": "https://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "properties": {
-        "intent": {"type": "string"},
-        "flavor": {"type": "string"},
-        "version": {"type": "string"},
-        "description": {"type": "string"},
-        "clouds": {
-            "type": "array",
-            "items": {"type": "string", "enum": ["aws", "azure", "gcp", "kubernetes"]},
-        },
-        "spec": jsonschema.Draft7Validator.META_SCHEMA,
-        "outputs": {
-            "type": "object",
-            "patternProperties": {
-                ".*": {
-                    "type": "object",
-                    "properties": {
-                        "type": {"type": "string", "pattern": "^@outputs?/.+"},
-                        "providers": {
-                            "type": "object",
-                            "patternProperties": {
-                                ".*": {
-                                    "type": "object",
-                                    "properties": {
-                                        "source": {"type": "string"},
-                                        "version": {"type": "string"},
-                                        "attributes": {
-                                            "type": "object",
-                                            "additionalProperties": True,
-                                        },
-                                    },
-                                    "required": ["source", "version", "attributes"],
-                                }
-                            },
-                        },
-                    },
-                    "required": ["type"],
-                }
-            },
-        },
-        "inputs": {
-            "type": "object",
-            "patternProperties": {
-                ".*": {
-                    "type": "object",
-                    "properties": {
-                        "type": {"type": "string", "pattern": "^@outputs?/.+"},
-                        "providers": {"type": "array", "items": {"type": "string"}},
-                    },
-                    "required": ["type"],
-                }
-            },
-        },
-        "sample": {
-            "type": "object",
-            "properties": {
-                "kind": {"type": "string"},
-                "flavor": {"type": "string"},
-                "version": {"type": "string"},
-                "spec": {"type": "object"},
-            },
-            "required": ["kind", "flavor", "version", "spec"],
-        },
-        "artifact_inputs": {
-            "type": "object",
-            "properties": {
-                "primary": {
-                    "type": "object",
-                    "properties": {
-                        "attribute_path": {
-                            "type": "string",
-                            "pattern": r"^spec\.[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*$",
-                        },
-                        "artifact_type": {
-                            "type": "string",
-                            "enum": ["docker_image", "freestyle"],
-                        },
-                    },
-                    "required": ["attribute_path", "artifact_type"],
-                }
-            },
-            "required": ["primary"],
-        },
-        "metadata": jsonschema.Draft7Validator.META_SCHEMA,
-    },
-    "required": ["intent", "flavor", "version", "description", "spec", "clouds"],
-}
 
 
 def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
@@ -361,35 +285,55 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
     for key, value in spec_obj.items():
         if isinstance(value, dict):
             field_type = value.get("type")
-            if field_type == "array":
+            override_disable_flag = value.get("x-ui-override-disable", False)
+            overrides_only_flag = value.get("x-ui-overrides-only", False)
+            if field_type == "array" and not override_disable_flag and not overrides_only_flag:
                 raise click.UsageError(
                     f"Invalid array type found at {path}.{key}. "
-                    f"Arrays are not allowed in spec. Use patternProperties for array-like structures instead."
+                    f"Arrays without x-ui-override-disable or x-ui-overrides-only field are not allowed in spec. Use patternProperties for array-like structures instead or set either x-ui-override-disable or x-ui-overrides-only field to true."
                 )
             if "patternProperties" in value:
                 pp = value["patternProperties"]
                 for pattern_key, pp_val in pp.items():
                     pattern_type = pp_val.get("type")
-                    if not isinstance(pattern_type, str) or pattern_type != "object":
+                    if not isinstance(pattern_type, str) or (pattern_type != "object" and pattern_type != "string"):
                         raise click.UsageError(
-                            f'patternProperties at {path}.{key} with pattern "{pattern_key}" must be of type object.'
+                            f'patternProperties at {path}.{key} with pattern "{pattern_key}" must be of type object or string.'
+                        )
+                    if pattern_type == "string" and not pp_val.get("x-ui-yaml-editor", False):
+                        raise click.UsageError(
+                            f'patternProperties at {path}.{key} with pattern "{pattern_key}" and type "string" must have x-ui-yaml-editor field set to true.'
                         )
             check_no_array_or_invalid_pattern_in_spec(value, path=f"{path}.{key}")
 
 
 def validate_yaml(data):
+    spec_obj = data.get("spec")
     try:
         validate(instance=data, schema=yaml_schema)
         # Additional check for arrays and invalid patternProperties in spec
-        spec_obj = data.get("spec")
         if spec_obj:
             check_no_array_or_invalid_pattern_in_spec(spec_obj)
     except jsonschema.exceptions.ValidationError as e:
-        print(e)
         raise click.UsageError(
-            f"❌ facets.yaml is not following Facets Schema: {e.message}"
+            f"Validation error in `facets.yaml`: `facets.yaml` is not following Facets Schema: {e}"
         )
-    print("Facets YAML validation successful!")
+
+    try:
+        validate(instance=spec_obj, schema=spec_schema)
+    except jsonschema.exceptions.ValidationError as e:
+        raise click.UsageError(
+            f"Validation error in `facets.yaml`: `x-ui` tags are invalid. Details: {e}"
+        )
+
+    try:
+        validate(instance=spec_obj, schema=additional_properties_schema)
+    except jsonschema.exceptions.ValidationError as e:
+        raise click.UsageError(
+            f"Validation error in `facets.yaml`: Field additionalProperties is not allowed under any object."
+        )
+
+    click.echo("✅ Facets YAML validation successful!")
     return True
 
 
