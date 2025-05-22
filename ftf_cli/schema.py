@@ -107,11 +107,8 @@ spec_schema = {
         "x-ui-variable-ref": {"type": "boolean"},
         "x-ui-secret-ref": {"type": "boolean"},
         "x-ui-dynamic-enum": {
-            "type": "object",
-            "properties": {
-                "sourceField": {"type": "string"},
-            },
-            "required": ["sourceField"],
+            "type": "string",
+            "pattern": "^([a-zA-Z0-9_-]+|\\*)(\\.([a-zA-Z0-9_-]+|\\*))*$"
         },
         "x-ui-overrides-only": {"type": "boolean"},
         "x-ui-override-disable": {"type": "boolean"},

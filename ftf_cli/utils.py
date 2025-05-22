@@ -282,19 +282,24 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
     for key, value in spec_obj.items():
         if isinstance(value, dict):
             field_type = value.get("type")
-            override_flag = value.get("x-ui-override-disable", False)
-            if field_type == "array" and not override_flag:
+            override_disable_flag = value.get("x-ui-override-disable", False)
+            overrides_only_flag = value.get("x-ui-overrides-only", False)
+            if field_type == "array" and not override_disable_flag and not overrides_only_flag:
                 raise click.UsageError(
                     f"Invalid array type found at {path}.{key}. "
-                    f"Arrays without x-ui-override-disable field are not allowed in spec. Use patternProperties for array-like structures instead or set x-ui-override-disable field to true."
+                    f"Arrays without x-ui-override-disable or x-ui-overrides-only field are not allowed in spec. Use patternProperties for array-like structures instead or set x-ui-override-disable field to true."
                 )
             if "patternProperties" in value:
                 pp = value["patternProperties"]
                 for pattern_key, pp_val in pp.items():
                     pattern_type = pp_val.get("type")
-                    if not isinstance(pattern_type, str) or pattern_type != "object":
+                    if not isinstance(pattern_type, str) or (pattern_type != "object" and pattern_type != "string"):
                         raise click.UsageError(
-                            f'patternProperties at {path}.{key} with pattern "{pattern_key}" must be of type object.'
+                            f'patternProperties at {path}.{key} with pattern "{pattern_key}" must be of type object or string.'
+                        )
+                    if pattern_type == "string" and not pp_val.get("x-ui-yaml-editor", False):
+                        raise click.UsageError(
+                            f'patternProperties at {path}.{key} with pattern "{pattern_key}" and type "string" must have x-ui-yaml-editor field set to true.'
                         )
             check_no_array_or_invalid_pattern_in_spec(value, path=f"{path}.{key}")
 
