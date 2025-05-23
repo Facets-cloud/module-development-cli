@@ -213,6 +213,53 @@ ftf expose-provider [OPTIONS] /path/to/module
 - Supports nested attribute keys using dot notation.
 - If no default output exists, one of type intent "default" under facets.yaml will be created.
 
+#### Add Import
+
+Add import declarations to the module to specify resources that should be imported.
+
+```bash
+ftf add-import [OPTIONS] /path/to/module
+```
+
+Automatically discovers resources in the module and prompts for selecting a resource, naming the import, and specifying if it's required.
+
+**Options**:
+- `-n, --name`: The name of the import to be added. If not provided, will prompt interactively.
+- `-r, --required`: Flag to indicate if this import is required. Default is True.
+- `--resource`: The Terraform resource address to import (e.g., 'aws_s3_bucket.bucket').
+- `--index`: For resources with 'count', specify the index (e.g., '0', '1', or '*' for all).
+- `--key`: For resources with 'for_each', specify the key (e.g., 'my-key' or '*' for all).
+
+**Examples**:
+```bash
+# Interactive mode
+ftf add-import /path/to/module
+
+# Non-interactive mode for regular resource
+ftf add-import /path/to/module --name key_vault --resource azurerm_key_vault.key_vault
+
+# Non-interactive mode for count resource
+ftf add-import /path/to/module --name count_vault --resource azurerm_key_vault.count_key_vault --index 1
+
+# Non-interactive mode for for_each resource
+ftf add-import /path/to/module --name for_each_vault --resource azurerm_key_vault.for_each_key_vault --key my-key
+
+# Non-interactive mode with full resource state address
+ftf add-import /path/to/module --name for_each_vault --resource-address 'azurerm_key_vault.for_each_key_vault[0]'
+```
+
+**Notes**:
+- Discovers and lists all resources defined in the module's Terraform files
+- Supports resources with count or for_each meta-arguments
+- Validates import names and resource addresses
+- Updates the facets.yaml file with the import declarations in the format:
+  ```yaml
+  imports:
+    - name: s3_bucket
+      resource_address: aws_s3_bucket.bucket
+      required: true
+  ```
+
 #### Delete Module
 
 Delete a registered Terraform module from the control plane.
@@ -271,6 +318,30 @@ ftf register-output-type YAML_PATH [OPTIONS]
 - The name should be in the format `@namespace/name`.
 - You can include a `providers` section in the YAML to specify provider information.
 - Ensures you're logged in before attempting to register the output type.
+
+#### Get Resources
+
+List all Terraform resources in the given module directory.
+
+```bash
+ftf get-resources /path/to/module
+```
+
+**Arguments**:
+- `/path/to/module`: Filesystem path to the directory containing Terraform files.
+
+**Description**:
+- Discovers and lists all Terraform resources defined in the module's `.tf` files.
+- Shows the resource address and whether it uses `count` or `for_each`.
+- Useful for quickly auditing which resources are present in a module.
+
+**Example Output**:
+```
+Found 3 resources:
+- aws_s3_bucket.bucket
+- aws_instance.web (with count)
+- aws_security_group.sg (with for_each)
+```
 
 ## Contribution
 
