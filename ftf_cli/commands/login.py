@@ -14,9 +14,11 @@ import configparser
 def login(profile, username, token, control_plane_url):
     """Login and store credentials under a named profile."""
 
-    # Try to use existing profile first if available
-    if use_existing_profile():
-        return
+    # Skip using existing profiles if all arguments are provided
+    if not (username and token and control_plane_url and profile) :
+        # Try to use existing profile if not all arguments are provided
+        if use_existing_profile():
+            return
 
     # Get required credentials
     control_plane_url = get_control_plane_url(control_plane_url)
