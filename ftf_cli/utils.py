@@ -271,6 +271,58 @@ def update_spec_variable(
         return
 
 
+def check_properties_have_required_fields(spec_obj, path="spec"):
+    """
+    Recursively check that individual properties within spec.properties have proper title and description fields.
+    This ensures that user-facing properties are properly documented.
+    Raises a UsageError if a property is missing title or description.
+    """
+    if not isinstance(spec_obj, dict):
+        return
+
+    # Check if this is a properties object
+    if "properties" in spec_obj and isinstance(spec_obj["properties"], dict):
+        properties = spec_obj["properties"]
+        for prop_name, prop_def in properties.items():
+            if isinstance(prop_def, dict):
+                # Check if this property has a type (indicating it's a user-facing property)
+                if "type" in prop_def:
+                    # Skip properties that are marked as override-disabled (internal/system properties)
+                    # Properties with x-ui-overrides-only are still user-facing and need validation
+                    override_disable_flag = prop_def.get("x-ui-override-disable", False)
+
+                    if not override_disable_flag:
+                        missing_fields = []
+
+                        # Check if title is missing
+                        if "title" not in prop_def or not prop_def["title"]:
+                            missing_fields.append("title")
+
+                        # Check if description is missing
+                        if "description" not in prop_def or not prop_def["description"]:
+                            missing_fields.append("description")
+
+                        if missing_fields:
+                            if len(missing_fields) == 1:
+                                field_text = f"'{missing_fields[0]}' field"
+                            else:
+                                fields_str = "', '".join(missing_fields)
+                                field_text = f"'{fields_str}' fields"
+
+                            raise click.UsageError(
+                                f"Missing required {field_text} for property '{prop_name}' at {path}.properties.{prop_name}. "
+                                f"All user-facing properties must have both title and description to help users understand their purpose."
+                            )
+
+                # Recursively check nested objects
+                check_properties_have_required_fields(prop_def, path=f"{path}.properties.{prop_name}")
+
+    # Also check nested objects that might have their own properties
+    for key, value in spec_obj.items():
+        if isinstance(value, dict) and key != "properties":
+            check_properties_have_required_fields(value, path=f"{path}.{key}")
+
+
 def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
     """
     Recursively check that no field in spec is of type 'array'.
@@ -361,6 +413,8 @@ def validate_yaml(data):
         if spec_obj:
             check_no_array_or_invalid_pattern_in_spec(spec_obj)
             check_conflicting_ui_properties(spec_obj)
+            # Check that properties have proper title and description fields
+            check_properties_have_required_fields(spec_obj)
     except jsonschema.exceptions.ValidationError as e:
         raise click.UsageError(
             f"Validation error in `facets.yaml`: `facets.yaml` is not following Facets Schema: {e}"
