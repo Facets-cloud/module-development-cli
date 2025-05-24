@@ -153,6 +153,8 @@ ftf login [OPTIONS]
 **Notes**:
 - URL format is validated before saving.
 - Credentials are verified via the control plane API before storage.
+- The selected profile becomes the default profile for future commands in the current session.
+- Profile selection persists across terminal sessions, so you don't need to specify a profile for each command.
 - Allows switching between multiple profiles/environments.
 
 #### Add Input

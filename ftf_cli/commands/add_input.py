@@ -12,6 +12,7 @@ from ftf_cli.utils import (
     is_logged_in,
     transform_output_tree,
     ensure_formatting_for_object,
+    get_profile_with_priority,
 )
 from lark import Token, Tree
 
@@ -21,8 +22,8 @@ from lark import Token, Tree
 @click.option(
     "-p",
     "--profile",
-    default=lambda: os.getenv("FACETS_PROFILE", "default"),
-    help="The profile name to use or defaults to environment variable FACETS_PROFILE if set.",
+    default=get_profile_with_priority,
+    help="The profile name to use (defaults to the current default profile)",
 )
 @click.option(
     "-n",
