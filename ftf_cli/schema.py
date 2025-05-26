@@ -22,7 +22,7 @@ yaml_schema = {
                     "properties": {
                         "type": {
                             "type": "string",
-                            "pattern": "^@[a-z0-9-_]+\/[a-z0-9-_]+",
+                            "pattern": r"^@[a-z0-9-_]+\/[a-z0-9-_]+",
                         },
                         "title": {"type": "string"},
                         "providers": {
@@ -55,7 +55,7 @@ yaml_schema = {
                     "properties": {
                         "type": {
                             "type": "string",
-                            "pattern": "^@[a-z0-9-_]+\/[a-z0-9-_]+",
+                            "pattern": r"^@[a-z0-9-_]+\/[a-z0-9-_]+",
                         },
                         "providers": {"type": "array", "items": {"type": "string"}},
                     },
@@ -108,7 +108,7 @@ spec_schema = {
         "x-ui-secret-ref": {"type": "boolean"},
         "x-ui-dynamic-enum": {
             "type": "string",
-            "pattern": "^([a-zA-Z0-9_-]+|\\*)(\\.([a-zA-Z0-9_-]+|\\*))*$"
+            "pattern": r"^spec\.([a-zA-Z0-9_-]+|\*)(\\.([a-zA-Z0-9_-]+|\*))*$"
         },
         "x-ui-overrides-only": {"type": "boolean"},
         "x-ui-override-disable": {"type": "boolean"},
@@ -118,7 +118,7 @@ spec_schema = {
         "x-ui-visible-if": {
             "type": "object",
             "properties": {
-                "field": {"type": "string", "pattern": "^spec\..+"},
+                "field": {"type": "string", "pattern": r"^spec\..+"},
                 "values": {
                     "type": "array",
                     "minItems": 1,
