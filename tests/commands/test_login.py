@@ -3,7 +3,7 @@ import pytest
 from click.testing import CliRunner
 from unittest.mock import patch, MagicMock
 import configparser
-import os
+import sys
 from requests.exceptions import HTTPError
 
 from ftf_cli.commands.login import login, profile_exists, login_with_existing_profile
@@ -59,9 +59,9 @@ def test_profile_exists_no_credentials_file():
         assert profile_exists('any_profile') is False
 
 
-@patch('ftf_cli.commands.login.fetch_user_details')
-@patch('ftf_cli.commands.login.set_default_profile')
-def test_login_with_existing_profile_success(mock_set_default, mock_fetch, mock_credentials_file):
+@patch.object(sys.modules['ftf_cli.commands.login'], 'set_default_profile')
+@patch.object(sys.modules['ftf_cli.commands.login'], 'fetch_user_details')
+def test_login_with_existing_profile_success(mock_fetch, mock_set_default, mock_credentials_file):
     """Test successful login with existing profile."""
     # Mock successful API response
     mock_response = MagicMock()
@@ -85,10 +85,9 @@ def test_login_with_existing_profile_success(mock_set_default, mock_fetch, mock_
         mock_set_default.assert_called_once_with('test_profile')
 
 
-@patch('ftf_cli.commands.login.fetch_user_details')
+@patch.object(sys.modules['ftf_cli.commands.login'], 'fetch_user_details')
 def test_login_with_existing_profile_http_error(mock_fetch, mock_credentials_file):
     """Test login with existing profile when API returns HTTP error."""
-    # Mock HTTP error response
     mock_fetch.side_effect = HTTPError("401 Unauthorized")
 
     mock_config = configparser.ConfigParser()
@@ -102,19 +101,20 @@ def test_login_with_existing_profile_http_error(mock_fetch, mock_credentials_fil
         assert result is False
 
 
-def test_login_command_with_existing_profile(runner, mock_credentials_file):
+@patch.object(sys.modules['ftf_cli.commands.login'], 'set_default_profile')
+@patch.object(sys.modules['ftf_cli.commands.login'], 'fetch_user_details')
+def test_login_command_with_existing_profile(mock_fetch, mock_set_default, runner, mock_credentials_file):
     """Test login command with existing profile automatically logs in."""
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
+    mock_fetch.return_value = mock_response
 
     # Mock configparser directly instead of file operations
     mock_config = configparser.ConfigParser()
     mock_config.read_string(mock_credentials_file)
 
     with patch('os.path.exists', return_value=True), \
-         patch('configparser.ConfigParser') as mock_config_class, \
-         patch('ftf_cli.commands.login.fetch_user_details', return_value=mock_response), \
-         patch('ftf_cli.commands.login.set_default_profile'):
+         patch('configparser.ConfigParser') as mock_config_class:
 
         mock_config_class.return_value = mock_config
 
@@ -136,15 +136,16 @@ def test_login_command_with_non_existing_profile_user_cancels(runner):
         assert "Login cancelled." in result.output
 
 
-def test_login_command_with_non_existing_profile_user_creates(runner):
+@patch.object(sys.modules['ftf_cli.commands.login'], 'set_default_profile')
+@patch.object(sys.modules['ftf_cli.commands.login'], 'store_credentials')
+@patch.object(sys.modules['ftf_cli.commands.login'], 'fetch_user_details')
+def test_login_command_with_non_existing_profile_user_creates(mock_fetch, mock_store, mock_set_default, runner):
     """Test login command with non-existing profile when user creates it."""
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
+    mock_fetch.return_value = mock_response
 
-    with patch('os.path.exists', return_value=False), \
-         patch('ftf_cli.commands.login.fetch_user_details', return_value=mock_response), \
-         patch('ftf_cli.commands.login.store_credentials') as mock_store, \
-         patch('ftf_cli.commands.login.set_default_profile') as mock_set_default:
+    with patch('os.path.exists', return_value=False):
 
         # Simulate user input: Yes to create profile, then credentials
         user_input = 'y\nhttps://new.example.com\nnew_user\nnew_token\n'
@@ -165,38 +166,39 @@ def test_login_command_with_non_existing_profile_user_creates(runner):
         mock_set_default.assert_called_once_with('new_profile')
 
 
-def test_login_command_with_all_credentials_provided(runner):
+@patch.object(sys.modules['ftf_cli.commands.login'], 'set_default_profile')
+@patch.object(sys.modules['ftf_cli.commands.login'], 'store_credentials')
+@patch.object(sys.modules['ftf_cli.commands.login'], 'fetch_user_details')
+def test_login_command_with_all_credentials_provided(mock_fetch, mock_store, mock_set_default, runner):
     """Test login command when all credentials are provided via command line."""
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
+    mock_fetch.return_value = mock_response
 
-    with patch('ftf_cli.commands.login.fetch_user_details', return_value=mock_response), \
-         patch('ftf_cli.commands.login.store_credentials'), \
-         patch('ftf_cli.commands.login.set_default_profile'):
+    result = runner.invoke(login, [
+        '-p', 'cli_profile',
+        '-c', 'https://cli.example.com',
+        '-u', 'cli_user',
+        '-t', 'cli_token'
+    ])
 
-        result = runner.invoke(login, [
-            '-p', 'cli_profile',
-            '-c', 'https://cli.example.com',
-            '-u', 'cli_user',
-            '-t', 'cli_token'
-        ])
-
-        assert result.exit_code == 0
-        assert "✔ Successfully logged in." in result.output
+    assert result.exit_code == 0
+    assert "✔ Successfully logged in." in result.output
 
 
-def test_login_command_no_profile_with_existing_profiles(runner, mock_credentials_file):
+@patch.object(sys.modules['ftf_cli.commands.login'], 'set_default_profile')
+@patch.object(sys.modules['ftf_cli.commands.login'], 'fetch_user_details')
+def test_login_command_no_profile_with_existing_profiles(mock_fetch, mock_set_default, runner, mock_credentials_file):
     """Test login command with no profile specified when profiles exist."""
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
+    mock_fetch.return_value = mock_response
 
     mock_config = configparser.ConfigParser()
     mock_config.read_string(mock_credentials_file)
 
     with patch('os.path.exists', return_value=True), \
-         patch('configparser.ConfigParser') as mock_config_class, \
-         patch('ftf_cli.commands.login.fetch_user_details', return_value=mock_response), \
-         patch('ftf_cli.commands.login.set_default_profile'):
+         patch('configparser.ConfigParser') as mock_config_class:
 
         mock_config_class.return_value = mock_config
 
@@ -214,19 +216,20 @@ def test_login_command_no_profile_with_existing_profiles(runner, mock_credential
         assert "✔ Successfully logged in." in result.output
 
 
-def test_login_command_no_profile_user_chooses_new_profile(runner, mock_credentials_file):
+@patch.object(sys.modules['ftf_cli.commands.login'], 'set_default_profile')
+@patch.object(sys.modules['ftf_cli.commands.login'], 'store_credentials')
+@patch.object(sys.modules['ftf_cli.commands.login'], 'fetch_user_details')
+def test_login_command_no_profile_user_chooses_new_profile(mock_fetch, mock_store, mock_set_default, runner, mock_credentials_file):
     """Test login command with no profile specified when user chooses to create new profile."""
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
+    mock_fetch.return_value = mock_response
 
     mock_config = configparser.ConfigParser()
     mock_config.read_string(mock_credentials_file)
 
     with patch('os.path.exists', return_value=True), \
-         patch('configparser.ConfigParser') as mock_config_class, \
-         patch('ftf_cli.commands.login.fetch_user_details', return_value=mock_response), \
-         patch('ftf_cli.commands.login.store_credentials'), \
-         patch('ftf_cli.commands.login.set_default_profile'):
+         patch('configparser.ConfigParser') as mock_config_class:
 
         mock_config_class.return_value = mock_config
 
@@ -245,15 +248,16 @@ def test_login_command_no_profile_user_chooses_new_profile(runner, mock_credenti
         assert "✔ Successfully logged in." in result.output
 
 
-def test_login_command_no_profile_no_existing_profiles(runner):
+@patch.object(sys.modules['ftf_cli.commands.login'], 'set_default_profile')
+@patch.object(sys.modules['ftf_cli.commands.login'], 'store_credentials')
+@patch.object(sys.modules['ftf_cli.commands.login'], 'fetch_user_details')
+def test_login_command_no_profile_no_existing_profiles(mock_fetch, mock_store, mock_set_default, runner):
     """Test login command with no profile specified when no profiles exist."""
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
+    mock_fetch.return_value = mock_response
 
-    with patch('os.path.exists', return_value=False), \
-         patch('ftf_cli.commands.login.fetch_user_details', return_value=mock_response), \
-         patch('ftf_cli.commands.login.store_credentials'), \
-         patch('ftf_cli.commands.login.set_default_profile'):
+    with patch('os.path.exists', return_value=False):
 
         # Simulate user providing credentials
         user_input = 'https://new.example.com\nnew_user\nnew_token\nnew_profile\n'
