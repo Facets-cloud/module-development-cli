@@ -271,11 +271,16 @@ def update_spec_variable(
         return
 
 
-def check_properties_have_required_fields(spec_obj, path="spec"):
+def check_properties_have_required_fields(spec_obj, path="spec", skip_validation=False):
     """
     Recursively check that individual properties within spec.properties have proper title and description fields.
     This ensures that user-facing properties are properly documented.
     Raises a UsageError if a property is missing title or description.
+
+    Args:
+        spec_obj: The spec object to validate
+        path: The current path in the spec for error reporting
+        skip_validation: If True, skip validation for this object and all nested objects
     """
     if not isinstance(spec_obj, dict):
         return
@@ -291,7 +296,10 @@ def check_properties_have_required_fields(spec_obj, path="spec"):
                     # Properties with x-ui-overrides-only are still user-facing and need validation
                     override_disable_flag = prop_def.get("x-ui-override-disable", False)
 
-                    if not override_disable_flag:
+                    # Skip validation if parent is override-disabled or this property is override-disabled
+                    should_skip = skip_validation or override_disable_flag
+
+                    if not should_skip:
                         missing_fields = []
 
                         # Check if title is missing
@@ -314,13 +322,14 @@ def check_properties_have_required_fields(spec_obj, path="spec"):
                                 f"All user-facing properties must have both title and description to help users understand their purpose."
                             )
 
-                # Recursively check nested objects
-                check_properties_have_required_fields(prop_def, path=f"{path}.properties.{prop_name}")
+                # Recursively check nested objects, propagating skip flag if this property is override-disabled
+                nested_skip = skip_validation or override_disable_flag
+                check_properties_have_required_fields(prop_def, path=f"{path}.properties.{prop_name}", skip_validation=nested_skip)
 
     # Also check nested objects that might have their own properties
     for key, value in spec_obj.items():
         if isinstance(value, dict) and key != "properties":
-            check_properties_have_required_fields(value, path=f"{path}.{key}")
+            check_properties_have_required_fields(value, path=f"{path}.{key}", skip_validation=skip_validation)
 
 
 def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):

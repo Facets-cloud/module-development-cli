@@ -185,6 +185,50 @@ def test_override_disabled_properties_skip_validation():
     check_properties_have_required_fields(spec)
 
 
+def test_nested_override_disabled_objects_skip_validation():
+    """Test that nested objects with x-ui-override-disable skip validation for all descendants."""
+    spec = {
+        "type": "object",
+        "properties": {
+            "user_config": {
+                "type": "object",
+                "title": "User Configuration",
+                "description": "User-facing configuration",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "User name"
+                    }
+                }
+            },
+            "internal_config": {
+                "type": "object",
+                "x-ui-override-disable": True,
+                # No title or description required for override-disabled objects
+                "properties": {
+                    "system_id": {
+                        "type": "string"
+                        # No title or description required - should be skipped due to parent override-disable
+                    },
+                    "nested_internal": {
+                        "type": "object",
+                        # No title or description required - should be skipped due to parent override-disable
+                        "properties": {
+                            "deep_field": {
+                                "type": "string"
+                                # No title or description required - should be skipped due to ancestor override-disable
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    # Should pass silently - nested properties under override-disabled objects should not require validation
+    check_properties_have_required_fields(spec)
+
+
 def test_overrides_only_properties_require_validation():
     """Test that properties with x-ui-overrides-only still require title and description validation."""
     spec = {
