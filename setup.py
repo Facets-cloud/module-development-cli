@@ -20,7 +20,7 @@ setup(
         "Click",
         "Jinja2",
         "PyYAML",
-        "checkov==3.2.414",
+        "checkov",
         "jsonschema",
         "requests",
         "questionary",
