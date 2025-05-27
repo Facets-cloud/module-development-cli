@@ -9,7 +9,7 @@ from ftf_cli.utils import is_logged_in, get_profile_with_priority
 @click.option(
     "-p",
     "--profile",
-    default=get_profile_with_priority,
+    default=get_profile_with_priority(),
     help="The profile name to use (defaults to the current default profile)",
 )
 def get_output_types(profile):
