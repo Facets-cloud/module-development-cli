@@ -291,13 +291,14 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
                 )
             if "patternProperties" in value:
                 pp = value["patternProperties"]
+                parent_has_yaml_editor = value.get("x-ui-yaml-editor", False)
                 for pattern_key, pp_val in pp.items():
                     pattern_type = pp_val.get("type")
                     if not isinstance(pattern_type, str) or (pattern_type != "object" and pattern_type != "string"):
                         raise click.UsageError(
                             f'patternProperties at {path}.{key} with pattern "{pattern_key}" must be of type object or string.'
                         )
-                    if pattern_type == "string" and not pp_val.get("x-ui-yaml-editor", False):
+                    if pattern_type == "string" and not parent_has_yaml_editor:
                         raise click.UsageError(
                             f'patternProperties at {path}.{key} with pattern "{pattern_key}" and type "string" must have x-ui-yaml-editor field set to true.'
                         )
