@@ -2,15 +2,15 @@ import os
 import click
 import requests
 
-from ftf_cli.utils import is_logged_in
+from ftf_cli.utils import is_logged_in, get_profile_with_priority
 
 
 @click.command()  # Add this decorator to register the function as a Click command
 @click.option(
     "-p",
     "--profile",
-    default=lambda: os.getenv("FACETS_PROFILE", "default"),
-    help="The profile name to use or defaults to environment variable FACETS_PROFILE if set.",
+    default=get_profile_with_priority(),
+    help="The profile name to use (defaults to the current default profile)",
 )
 def get_output_types(profile):
     """Get the list of registered output types in the control plane"""
