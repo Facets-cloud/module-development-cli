@@ -9,6 +9,9 @@ import click
 import hcl2
 import requests
 import hcl
+import glob
+import re
+import sys
 from ftf_cli.schema import yaml_schema, spec_schema, additional_properties_schema
 
 ALLOWED_TYPES = ["string", "number", "boolean", "enum"]
@@ -534,3 +537,167 @@ def generate_type_tree(spec: dict) -> dict:
                 else:
                     result[key] = "any"
     return result
+
+
+def update_facets_yaml_imports(yaml_path, import_config, mode="interactive"):
+    """Update the imports section of facets.yaml file.
+
+    Args:
+        yaml_path: Path to the facets.yaml file
+        import_config: Dictionary containing the import configuration
+        mode: 'interactive' or 'non-interactive'
+
+    Returns:
+        True if a new import was added, "updated" if an existing import was updated,
+        False if the operation was canceled or failed
+    """
+    try:
+        # Load existing YAML
+        with open(yaml_path, "r") as file:
+            facets_data = yaml.safe_load(file) or {}
+
+        # Add or update imports section
+        if "imports" not in facets_data:
+            facets_data["imports"] = []
+
+        # Check if an import with the same name already exists
+        for i, existing_import in enumerate(facets_data["imports"]):
+            if existing_import.get("name") == import_config["name"]:
+                if mode == "non-interactive":
+                    # In non-interactive mode, always overwrite
+                    click.echo(
+                        f"⚠️ Overwriting existing import with name '{import_config['name']}'"
+                    )
+                    facets_data["imports"][i] = import_config
+                    result = "updated"
+                else:
+                    # In interactive mode, ask user for confirmation
+                    # This part is specific to the command and handled in the command file
+                    return {"action": "exists", "facets_data": facets_data, "index": i}
+                break
+        else:
+            # Add new import
+            facets_data["imports"].append(import_config)
+            result = True
+
+        # Write updated YAML back to file with custom style
+        with open(yaml_path, "r") as file:
+            original_content = file.read()
+
+        # Create properly formatted imports section
+        imports_yaml = "imports:\n"
+        for imp in facets_data["imports"]:
+            imports_yaml += f"  - name: {imp['name']}\n"
+            imports_yaml += f"    resource_address: {imp['resource_address']}\n"
+            imports_yaml += f"    required: {str(imp['required']).lower()}\n"
+
+        # If imports section already exists, replace it
+        if "imports:" in original_content:
+            # Find the imports section and replace it
+            import_pattern = r"imports:.*?(?=\n\w+:|$)"
+            new_content = re.sub(
+                import_pattern, imports_yaml.rstrip(), original_content, flags=re.DOTALL
+            )
+        else:
+            # Otherwise add the imports section at the end
+            new_content = original_content.rstrip() + "\n" + imports_yaml
+
+        # Write the updated content
+        with open(yaml_path, "w") as file:
+            file.write(new_content)
+
+        return result
+
+    except Exception as e:
+        click.echo(f"❌ Error updating facets.yaml: {e}")
+        return False
+
+
+def discover_resources(path: str) -> list[dict]:
+    """Discover all Terraform resources in the module directory.
+
+    Args:
+        path: Path to the module directory
+
+    Returns:
+        List of discovered resources with their metadata
+    """
+    resources = []
+    tf_files = glob.glob(os.path.join(path, "*.tf"))
+    seen_resources = set()
+    for tf_file in tf_files:
+        try:
+            with open(tf_file, "r") as file:
+                content = hcl2.load(file)
+            if "resource" in content:
+                for resource_block in content["resource"]:
+                    for resource_type, resources_of_type in resource_block.items():
+                        if resource_type.startswith("__") and resource_type.endswith(
+                            "__"
+                        ):
+                            continue
+                        for resource_name, resource_config in resources_of_type.items():
+                            if resource_name.startswith(
+                                "__"
+                            ) and resource_name.endswith("__"):
+                                continue
+                            resource_address = f"{resource_type}.{resource_name}"
+                            if resource_address in seen_resources:
+                                continue
+                            seen_resources.add(resource_address)
+                            has_count = False
+                            has_for_each = False
+                            count_value = None
+                            for_each_value = None
+                            if isinstance(resource_config, dict):
+                                if "count" in resource_config:
+                                    has_count = True
+                                    count_value = resource_config["count"]
+                                if "for_each" in resource_config:
+                                    has_for_each = True
+                                    for_each_value = resource_config["for_each"]
+                            elif isinstance(resource_config, list) and resource_config:
+                                first_item = resource_config[0]
+                                if isinstance(first_item, dict):
+                                    if "count" in first_item:
+                                        has_count = True
+                                        count_value = first_item["count"]
+                                    if "for_each" in first_item:
+                                        has_for_each = True
+                                        for_each_value = first_item["for_each"]
+                            if has_count:
+                                resources.append(
+                                    {
+                                        "address": f"{resource_address}",
+                                        "display": f"{resource_address} (with count)",
+                                        "indexed": True,
+                                        "index_type": "count",
+                                        "value": count_value,
+                                        "source_file": os.path.basename(tf_file),
+                                    }
+                                )
+                            elif has_for_each:
+                                resources.append(
+                                    {
+                                        "address": f"{resource_address}",
+                                        "display": f"{resource_address} (with for_each)",
+                                        "indexed": True,
+                                        "index_type": "for_each",
+                                        "value": for_each_value,
+                                        "source_file": os.path.basename(tf_file),
+                                    }
+                                )
+                            else:
+                                resources.append(
+                                    {
+                                        "address": resource_address,
+                                        "display": resource_address,
+                                        "indexed": False,
+                                        "source_file": os.path.basename(tf_file),
+                                    }
+                                )
+        except Exception as e:
+            click.echo(f"⚠️ Could not parse {tf_file}: {e}")
+            click.echo(f"Error details: {str(e)}")
+            sys.exit(1)
+    return sorted(resources, key=lambda r: r["address"])
