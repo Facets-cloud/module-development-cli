@@ -333,16 +333,7 @@ def validate_yaml(data):
         raise click.UsageError(
             f"Validation error in `facets.yaml`: Field additionalProperties is not allowed under any object."
         )
-    
-    # validate the spec of sample with the spec of yaml file
-    sample_spec = data.get("sample").get("spec")
-    try:
-        validate(instance=sample_spec, schema=spec_obj)
-    except jsonschema.exceptions.ValidationError as e:
-        raise click.UsageError(
-            f"Validation error in `facets.yaml`: spec in sample is not following spec schema defined in yaml: {e}"
-        )
-    
+
     click.echo("✅ Facets YAML validation successful!")
     return True
 

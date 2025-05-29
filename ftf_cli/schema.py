@@ -95,7 +95,7 @@ yaml_schema = {
         },
         "metadata": Draft7Validator.META_SCHEMA,
     },
-    "required": ["intent", "flavor", "version", "description", "spec", "clouds", "sample"],
+    "required": ["intent", "flavor", "version", "description", "spec", "clouds"],
 }
 
 # Define a separate schema for the `spec` field
