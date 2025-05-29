@@ -291,7 +291,7 @@ def preview_module(
         bash_style_path = to_bash_path(path)
         shell_command = (
             f"curl -s https://facets-cloud.github.io/facets-schemas/scripts/module_publish.sh | "
-            f"bash -s -- -c {control_plane_url} -u {username} -t {token} -i {intent} -f {flavor} -v {original_version} -p {bash_style_path}"
+            f"bash -s -- -c {control_plane_url} -u {username} -t {token} -i {intent} -f {flavor} -v {original_version}"
         )
         publish_command = bash_cmd + [shell_command]
         publish_shell = False
@@ -299,7 +299,7 @@ def preview_module(
         publish_command = [
             "bash", "-c",
             f"curl -s https://facets-cloud.github.io/facets-schemas/scripts/module_publish.sh | "
-            f"bash -s -- -c {control_plane_url} -u {username} -t {token} -i {intent} -f {flavor} -v {original_version} -p {path}"
+            f"bash -s -- -c {control_plane_url} -u {username} -t {token} -i {intent} -f {flavor} -v {original_version}"
         ]
         publish_shell = False
 
