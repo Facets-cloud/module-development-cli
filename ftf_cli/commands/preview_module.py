@@ -179,6 +179,13 @@ def preview_module(
     intent = facets_data.get("intent", "unknown")
     flavor = facets_data.get("flavor", "unknown")
 
+    # Check if jq is installed
+    jq_path = shutil.which("jq")
+    if not jq_path:
+        click.echo("❌ Error: 'jq' is required but not found in your PATH. Please install jq and try again.")
+        click.echo("Download jq from https://stedolan.github.io/jq/download/")
+        raise click.UsageError("jq not found in PATH.")
+
     # Preparing the command for registration
     click.echo("Preparing registration command...")
 
