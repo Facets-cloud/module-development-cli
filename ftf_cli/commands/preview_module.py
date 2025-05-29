@@ -8,10 +8,6 @@ import getpass
 import yaml
 import hcl2
 import json
-import platform
-import shutil
-import pathlib
-
 
 @click.command()
 @click.argument("path", type=click.Path(exists=True))
@@ -110,15 +106,6 @@ def preview_module(
             click.echo(f"Error processing {output_file}: {e}")
             return None
 
-    def to_bash_path(path):
-        """Convert Windows path to Bash style if on Windows, else return as is."""
-        if platform.system() == "Windows":
-            # Convert to absolute path and replace backslashes with slashes
-            p = pathlib.Path(path).absolute()
-            bash_path = "/" + str(p).replace(":", "").replace("\\", "/")
-            return bash_path
-        return path
-
     click.echo(f"Profile selected: {profile}")
 
     credentials = is_logged_in(profile)
@@ -179,56 +166,47 @@ def preview_module(
     intent = facets_data.get("intent", "unknown")
     flavor = facets_data.get("flavor", "unknown")
 
-    # Check if jq is installed
-    jq_path = shutil.which("jq")
-    if not jq_path:
-        click.echo("❌ Error: 'jq' is required but not found in your PATH. Please install jq and try again.")
-        click.echo("Download jq from https://stedolan.github.io/jq/download/")
-        raise click.UsageError("jq not found in PATH.")
-
     # Preparing the command for registration
     click.echo("Preparing registration command...")
 
-    # Detect OS and set bash command accordingly
-    if platform.system() == "Windows":
-        # Try to find bash.exe from Git for Windows
-        git_bash = shutil.which("bash")
-        if not git_bash:
-            # Fallback to default Git Bash install path
-            git_bash = r"C:\Program Files\Git\bin\bash.exe"
-        bash_cmd = [git_bash, "-c"]
-        bash_style_path = to_bash_path(path)
-        shell_command = (
-            f"curl -s https://facets-cloud.github.io/facets-schemas/scripts/module_register.sh | "
-            f"bash -s -- -c {control_plane_url} -u {username} -t {token} -p {bash_style_path}"
-        )
-        if auto_create_intent:
-            shell_command += " -a"
-        if not publishable and not publish:
-            shell_command += " -f"
-        if git_repo_url:
-            shell_command += f" -g {git_repo_url}"
-        shell_command += f" -r {git_ref}"
-        command = bash_cmd + [shell_command]
-        shell = False
-    else:
-        # Unix/Mac: use normal shell command
-        command = [
-            "bash", "-c",
-            f"curl -s https://facets-cloud.github.io/facets-schemas/scripts/module_register.sh | "
-            f"bash -s -- -c {control_plane_url} -u {username} -t {token} -p {path}"
-            + (" -a" if auto_create_intent else "")
-            + ("" if publishable or publish else " -f")
-            + (f" -g {git_repo_url}" if git_repo_url else "")
-            + f" -r {git_ref}"
-        ]
-        shell = False
+    command = [
+        "curl",
+        "-s",
+        "https://facets-cloud.github.io/facets-schemas/scripts/module_register.sh",
+        "|",
+        "bash",
+        "-s",
+        "--",
+        "-c",
+        control_plane_url,
+        "-u",
+        username,
+        "-t",
+        token,
+        "-p",
+        path,
+    ]
 
-    click.echo(f'Auto-create intent: {auto_create_intent}')
-    click.echo(f'Module marked as publishable: {publishable}')
+    # Add the auto-create-intent flag if set
+    if auto_create_intent:
+        command.append("-a")
+
+    click.echo(f"Auto-create intent: {auto_create_intent}")
+
+    # Add the publishable flag if set
+    if not publishable and not publish:
+        command.append("-f")
+
+    click.echo(f"Module marked as publishable: {publishable}")
+
+    # Add GIT_REPO_URL if set
     if git_repo_url:
-        click.echo(f'Git repository URL: {git_repo_url}')
-    click.echo(f'Git reference: {git_ref}')
+        command.extend(["-g", git_repo_url])
+        click.echo(f"Git repository URL: {git_repo_url}")
+
+    # Add GIT_REF
+    command.extend(["-r", git_ref])
+    click.echo(f"Git reference: {git_ref}")
 
     success_message = f'[PREVIEW] Module with Intent "{intent}", Flavor "{flavor}", and Version "{facets_data["version"]}" successfully previewed to {control_plane_url}'
 
@@ -239,12 +217,7 @@ def preview_module(
 
         # Execute the command
         process = subprocess.run(
-            command,
-            shell=shell,
-            capture_output=True,
-            text=True,
-            check=True,
-            encoding="utf-8"  # <-- Add this line
+            " ".join(command), shell=True, capture_output=True, text=True, check=True
         )
         # Echo each line of the output using click.echo
         for line in process.stdout.splitlines():
@@ -281,28 +254,27 @@ def preview_module(
                 )
 
     success_message_published = f'[PUBLISH] Module with Intent "{intent}", Flavor "{flavor}", and Version "{facets_data["version"]}" successfully published to {control_plane_url}'
-
-    # Detect OS and set bash command accordingly for publish
-    if platform.system() == "Windows":
-        git_bash = shutil.which("bash")
-        if not git_bash:
-            git_bash = r"C:\Program Files\Git\bin\bash.exe"
-        bash_cmd = [git_bash, "-c"]
-        bash_style_path = to_bash_path(path)
-        shell_command = (
-            f"curl -s https://facets-cloud.github.io/facets-schemas/scripts/module_publish.sh | "
-            f"bash -s -- -c {control_plane_url} -u {username} -t {token} -i {intent} -f {flavor} -v {original_version} -p {bash_style_path}"
-        )
-        publish_command = bash_cmd + [shell_command]
-        publish_shell = False
-    else:
-        publish_command = [
-            "bash", "-c",
-            f"curl -s https://facets-cloud.github.io/facets-schemas/scripts/module_publish.sh | "
-            f"bash -s -- -c {control_plane_url} -u {username} -t {token} -i {intent} -f {flavor} -v {original_version} -p {path}"
-        ]
-        publish_shell = False
-
+    publish_command = [
+        "curl",
+        "-s",
+        "https://facets-cloud.github.io/facets-schemas/scripts/module_publish.sh",
+        "|",
+        "bash",
+        "-s",
+        "--",
+        "-c",
+        control_plane_url,
+        "-u",
+        username,
+        "-t",
+        token,
+        "-i",
+        intent,
+        "-f",
+        flavor,
+        "-v",
+        original_version,
+    ]
     try:
         if publish:
             if is_local_develop:
@@ -310,12 +282,11 @@ def preview_module(
                     "❌ Cannot publish a local development module, please provide GIT_REF and GIT_REPO_URL"
                 )
             process = subprocess.run(
-                publish_command,
-                shell=publish_shell,
+                " ".join(publish_command),
+                shell=True,
                 capture_output=True,
                 text=True,
                 check=True,
-                encoding="utf-8"
             )
 
             # Echo each line of the output
@@ -334,5 +305,5 @@ def preview_module(
         raise click.UsageError(f"❌ Failed to Publish module: {e}")
 
 
-if __name__ == "__main__":
-    preview_module()
+# if __name__ == "__main__":
+#     preview_module()
