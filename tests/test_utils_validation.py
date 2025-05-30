@@ -1,6 +1,6 @@
 import pytest
 import click
-from ftf_cli.utils import check_no_array_or_invalid_pattern_in_spec
+from ftf_cli.utils import check_no_array_or_invalid_pattern_in_spec, check_conflicting_ui_properties
 
 
 def test_no_array_type_pass():
@@ -21,8 +21,8 @@ def test_pattern_properties_value_not_dict_raises():
     with pytest.raises(click.UsageError) as excinfo:
         check_no_array_or_invalid_pattern_in_spec(spec)
     assert (
-        'patternProperties at spec.some_field with pattern "^pattern$" must be of type object or string'
-        in str(excinfo.value)
+            'patternProperties at spec.some_field with pattern "^pattern$" must be of type object or string'
+            in str(excinfo.value)
     )
 
 
@@ -52,3 +52,147 @@ def test_nested_structure_with_array_type_raises():
     with pytest.raises(click.UsageError) as excinfo:
         check_no_array_or_invalid_pattern_in_spec(spec)
     assert "Invalid array type found at spec.level1.level2.field" in str(excinfo.value)
+
+
+# Tests for check_conflicting_ui_properties function
+def test_no_conflicting_properties_pass():
+    """Test that valid configurations pass without errors."""
+    spec = {
+        "field1": {"type": "string"},
+        "field2": {"type": "string", "x-ui-yaml-editor": True},
+        "field3": {"type": "object", "patternProperties": {"^.*$": {"type": "object"}}},
+        "field4": {"type": "string", "x-ui-override-disable": True},
+        "field5": {"type": "string", "x-ui-overrides-only": True}
+    }
+    # Should pass silently
+    check_conflicting_ui_properties(spec)
+
+
+def test_pattern_properties_with_yaml_editor_raises():
+    """Test that patternProperties + x-ui-yaml-editor conflict is detected."""
+    spec = {
+        "field": {
+            "type": "object",
+            "patternProperties": {"^.*$": {"type": "object"}},
+            "x-ui-yaml-editor": True
+        }
+    }
+    with pytest.raises(click.UsageError) as excinfo:
+        check_conflicting_ui_properties(spec)
+    assert "Configuration conflict at spec.field" in str(excinfo.value)
+    assert "patternProperties" in str(excinfo.value)
+    assert "x-ui-yaml-editor: true" in str(excinfo.value)
+    assert "mutually exclusive" in str(excinfo.value)
+
+
+def test_override_disable_with_overrides_only_raises():
+    """Test that x-ui-override-disable + x-ui-overrides-only conflict is detected."""
+    spec = {
+        "field": {
+            "type": "string",
+            "x-ui-override-disable": True,
+            "x-ui-overrides-only": True
+        }
+    }
+    with pytest.raises(click.UsageError) as excinfo:
+        check_conflicting_ui_properties(spec)
+    assert "Configuration conflict at spec.field" in str(excinfo.value)
+    assert "x-ui-override-disable: true" in str(excinfo.value)
+    assert "x-ui-overrides-only: true" in str(excinfo.value)
+    assert "cannot be overridden and will only have a default value" in str(excinfo.value)
+    assert "must be specified at environment level via overrides" in str(excinfo.value)
+
+
+def test_nested_conflicting_properties_raises():
+    """Test that conflicts in nested structures are detected with correct path."""
+    spec = {
+        "level1": {
+            "level2": {
+                "field": {
+                    "type": "string",
+                    "x-ui-override-disable": True,
+                    "x-ui-overrides-only": True
+                }
+            }
+        }
+    }
+    with pytest.raises(click.UsageError) as excinfo:
+        check_conflicting_ui_properties(spec)
+    assert "Configuration conflict at spec.level1.level2.field" in str(excinfo.value)
+
+
+def test_pattern_properties_with_yaml_editor_false_pass():
+    """Test that patternProperties with x-ui-yaml-editor: false is allowed."""
+    spec = {
+        "field": {
+            "type": "object",
+            "patternProperties": {"^.*$": {"type": "object"}},
+            "x-ui-yaml-editor": False
+        }
+    }
+    # Should pass silently
+    check_conflicting_ui_properties(spec)
+
+
+def test_override_disable_false_with_overrides_only_true_pass():
+    """Test that x-ui-override-disable: false with x-ui-overrides-only: true is allowed."""
+    spec = {
+        "field": {
+            "type": "string",
+            "x-ui-override-disable": False,
+            "x-ui-overrides-only": True
+        }
+    }
+    # Should pass silently
+    check_conflicting_ui_properties(spec)
+
+
+def test_override_disable_true_with_overrides_only_false_pass():
+    """Test that x-ui-override-disable: true with x-ui-overrides-only: false is allowed."""
+    spec = {
+        "field": {
+            "type": "string",
+            "x-ui-override-disable": True,
+            "x-ui-overrides-only": False
+        }
+    }
+    # Should pass silently
+    check_conflicting_ui_properties(spec)
+
+
+def test_multiple_conflicts_in_different_fields():
+    """Test that the function detects the first conflict encountered."""
+    spec = {
+        "field1": {
+            "type": "object",
+            "patternProperties": {"^.*$": {"type": "object"}},
+            "x-ui-yaml-editor": True
+        },
+        "field2": {
+            "type": "string",
+            "x-ui-override-disable": True,
+            "x-ui-overrides-only": True
+        }
+    }
+    with pytest.raises(click.UsageError) as excinfo:
+        check_conflicting_ui_properties(spec)
+    # Should detect one of the conflicts (order may vary based on dict iteration)
+    assert "Configuration conflict at spec." in str(excinfo.value)
+
+
+def test_empty_spec_pass():
+    """Test that empty spec passes validation."""
+    spec = {}
+    # Should pass silently
+    check_conflicting_ui_properties(spec)
+
+
+def test_non_dict_values_ignored():
+    """Test that non-dict values are ignored gracefully."""
+    spec = {
+        "field1": "string_value",
+        "field2": 123,
+        "field3": {"type": "string"}
+    }
+    # Should pass silently
+    check_conflicting_ui_properties(spec)
