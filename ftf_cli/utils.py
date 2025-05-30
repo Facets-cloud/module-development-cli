@@ -308,6 +308,51 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
             check_no_array_or_invalid_pattern_in_spec(value, path=f"{path}.{key}")
 
 
+def check_conflicting_ui_properties(spec_obj, path="spec"):
+    """
+    Recursively check for conflicting UI properties in spec fields.
+    
+    Validates that:
+    1. patternProperties and x-ui-yaml-editor: true are not both present on the same field
+    2. x-ui-override-disable: true and x-ui-overrides-only: true are not both present on the same field
+    
+    Raises UsageError with clear error message if conflicts are found.
+    """
+    if not isinstance(spec_obj, dict):
+        return
+
+    for key, value in spec_obj.items():
+        if isinstance(value, dict):
+            # Check for patternProperties + x-ui-yaml-editor conflict
+            has_pattern_properties = "patternProperties" in value
+            has_yaml_editor = value.get("x-ui-yaml-editor", False)
+            
+            if has_pattern_properties and has_yaml_editor:
+                raise click.UsageError(
+                    f"Configuration conflict at {path}.{key}: "
+                    f"Fields cannot have both 'patternProperties' and 'x-ui-yaml-editor: true'. "
+                    f"These properties are mutually exclusive - use either patternProperties for "
+                    f"dynamic key-value structures or x-ui-yaml-editor for free-form YAML editing."
+                )
+            
+            # Check for x-ui-override-disable + x-ui-overrides-only conflict
+            has_override_disable = value.get("x-ui-override-disable", False)
+            has_overrides_only = value.get("x-ui-overrides-only", False)
+            
+            if has_override_disable and has_overrides_only:
+                raise click.UsageError(
+                    f"Configuration conflict at {path}.{key}: "
+                    f"Fields cannot have both 'x-ui-override-disable: true' and 'x-ui-overrides-only: true'. "
+                    f"These properties are mutually exclusive - 'x-ui-override-disable' is for fields that "
+                    f"cannot be overridden and will only have a default value in the blueprint, while "
+                    f"'x-ui-overrides-only' is for fields that cannot have a default value in the blueprint "
+                    f"and must be specified at environment level via overrides."
+                )
+            
+            # Recursively check nested properties
+            check_conflicting_ui_properties(value, path=f"{path}.{key}")
+
+
 def validate_yaml(data):
     spec_obj = data.get("spec")
     try:
@@ -315,6 +360,7 @@ def validate_yaml(data):
         # Additional check for arrays and invalid patternProperties in spec
         if spec_obj:
             check_no_array_or_invalid_pattern_in_spec(spec_obj)
+            check_conflicting_ui_properties(spec_obj)
     except jsonschema.exceptions.ValidationError as e:
         raise click.UsageError(
             f"Validation error in `facets.yaml`: `facets.yaml` is not following Facets Schema: {e}"
