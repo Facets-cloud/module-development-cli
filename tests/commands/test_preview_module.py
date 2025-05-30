@@ -9,7 +9,7 @@ from click.testing import CliRunner
 from unittest.mock import patch
 
 from ftf_cli.commands.preview_module import preview_module
-from ftf_cli.operations import ModuleOperationError
+from ftf_cli.operations import ModuleOperationError, register_module, publish_module
 
 
 @pytest.fixture
