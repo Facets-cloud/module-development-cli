@@ -77,3 +77,6 @@ dotenv
 .DS_Store
 
 .venv/
+
+# Claude AI local settings
+.claude/settings.local.json
