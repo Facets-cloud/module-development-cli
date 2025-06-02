@@ -58,14 +58,14 @@ def create_module_zip(path: str) -> str:
 
 
 def register_module(
-    control_plane_url: str,
-    username: str,
-    token: str,
-    path: str,
-    git_url: Optional[str] = None,
-    git_ref: Optional[str] = None,
-    is_feature_branch: bool = False,
-    auto_create: bool = False,
+        control_plane_url: str,
+        username: str,
+        token: str,
+        path: str,
+        git_url: Optional[str] = None,
+        git_ref: Optional[str] = None,
+        is_feature_branch: bool = False,
+        auto_create: bool = False,
 ) -> None:
     """Register a module with the control plane"""
 
@@ -103,32 +103,28 @@ def register_module(
         auth_string = base64.b64encode(f"{username}:{token}".encode()).decode().strip()
         headers = {"Authorization": f"Basic {auth_string}"}
 
-        # Prepare files for upload
-        files = {"file": ("module.zip", open(zip_path, "rb"), "application/zip")}
+        # Prepare files for upload and make the request
+        with open(zip_path, "rb") as zip_file:
+            files = {"file": ("module.zip", zip_file, "application/zip")}
 
-        # Prepare metadata if git info is provided
-        if any([git_url, git_ref, is_feature_branch, auto_create]):
-            metadata = {}
-            if git_url:
-                metadata["gitUrl"] = git_url
-            if git_ref:
-                metadata["gitRef"] = git_ref
-            metadata["featureBranch"] = is_feature_branch
-            metadata["autoCreate"] = auto_create
+            # Prepare metadata if git info is provided
+            if any([git_url, git_ref, is_feature_branch, auto_create]):
+                metadata = {}
+                if git_url:
+                    metadata["gitUrl"] = git_url
+                if git_ref:
+                    metadata["gitRef"] = git_ref
+                metadata["featureBranch"] = is_feature_branch
+                metadata["autoCreate"] = auto_create
 
-            files["metadata"] = (
-                "metadata.json",
-                json.dumps(metadata),
-                "application/json",
-            )
+                files["metadata"] = (
+                    "metadata.json",
+                    json.dumps(metadata),
+                    "application/json",
+                )
 
-        # Make the request
-        response = requests.post(upload_url, headers=headers, files=files)
-
-        # Close file handles
-        for file_tuple in files.values():
-            if hasattr(file_tuple[1], "close"):
-                file_tuple[1].close()
+            # Make the request
+            response = requests.post(upload_url, headers=headers, files=files)
 
         # Check response
         if response.status_code == 200:
@@ -158,12 +154,12 @@ def register_module(
 
 
 def publish_module(
-    control_plane_url: str,
-    username: str,
-    token: str,
-    intent: str,
-    flavor: str,
-    version: str,
+        control_plane_url: str,
+        username: str,
+        token: str,
+        intent: str,
+        flavor: str,
+        version: str,
 ) -> None:
     """Publish a module to make it available for production use"""
 
