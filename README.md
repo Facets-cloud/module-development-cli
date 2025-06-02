@@ -28,8 +28,6 @@ To install FTF CLI from source, follow these steps:
 
 - Python 3.11 or later
 - Virtual environment (recommended)
-- [jq](https://github.com/jqlang/jq)
-- [Git Bash](https://winget.run/pkg/Git/Git) 
 
 #### Steps
 
