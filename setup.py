@@ -42,5 +42,5 @@ setup(
         [console_scripts]
         ftf=ftf_cli.cli:cli
     """,
-    python_requires=">=3.10",
+    python_requires=">=3.11",
 )
