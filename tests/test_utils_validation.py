@@ -272,3 +272,167 @@ def test_module_with_invalid_tf_files_continues():
         os.remove(invalid_tf)
         os.remove(valid_tf)
         os.rmdir(invalid_module_dir)
+
+
+
+class TestValidateNoProviderBlocks:
+    """Test the validate_no_provider_blocks utility function."""
+
+    def test_validate_no_provider_blocks_passes_with_clean_files(self):
+        """Test that validation passes when no provider blocks are present."""
+        import tempfile
+        import os
+        from ftf_cli.utils import validate_no_provider_blocks
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create clean .tf files without provider blocks
+            main_tf = os.path.join(temp_dir, "main.tf")
+            with open(main_tf, "w") as f:
+                f.write('''
+resource "aws_instance" "test" {
+  ami = "ami-123456"
+}
+''')
+            
+            # Create nested directory with clean files
+            nested_dir = os.path.join(temp_dir, "modules")
+            os.makedirs(nested_dir)
+            nested_tf = os.path.join(nested_dir, "vpc.tf")
+            with open(nested_tf, "w") as f:
+                f.write('''
+resource "aws_vpc" "example" {
+  cidr_block = "10.0.0.0/16"
+}
+''')
+            
+            # Should pass without raising exception
+            result = validate_no_provider_blocks(temp_dir)
+            assert result is True
+
+    def test_validate_no_provider_blocks_fails_with_provider_in_root(self):
+        """Test that validation fails when provider block is in root directory."""
+        import tempfile
+        import os
+        from ftf_cli.utils import validate_no_provider_blocks
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create .tf file with provider block
+            main_tf = os.path.join(temp_dir, "main.tf")
+            with open(main_tf, "w") as f:
+                f.write('''
+provider "aws" {
+  region = "us-west-2"
+}
+
+resource "aws_instance" "test" {
+  ami = "ami-123456"
+}
+''')
+            
+            # Should raise UsageError
+            with pytest.raises(click.UsageError) as excinfo:
+                validate_no_provider_blocks(temp_dir)
+            
+            assert "Provider blocks are not allowed in module files" in str(excinfo.value)
+            assert "main.tf" in str(excinfo.value)
+
+    def test_validate_no_provider_blocks_fails_with_provider_in_nested(self):
+        """Test that validation fails when provider block is in nested directory."""
+        import tempfile
+        import os
+        from ftf_cli.utils import validate_no_provider_blocks
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create clean root file
+            main_tf = os.path.join(temp_dir, "main.tf")
+            with open(main_tf, "w") as f:
+                f.write('''
+resource "aws_instance" "test" {
+  ami = "ami-123456"
+}
+''')
+            
+            # Create nested directory with provider block
+            nested_dir = os.path.join(temp_dir, "modules", "networking")
+            os.makedirs(nested_dir)
+            nested_tf = os.path.join(nested_dir, "vpc.tf")
+            with open(nested_tf, "w") as f:
+                f.write('''
+provider "aws" {
+  region = "us-east-1"
+  alias  = "east"
+}
+
+resource "aws_vpc" "nested" {
+  cidr_block = "10.0.0.0/16"
+}
+''')
+            
+            # Should raise UsageError
+            with pytest.raises(click.UsageError) as excinfo:
+                validate_no_provider_blocks(temp_dir)
+            
+            assert "Provider blocks are not allowed in module files" in str(excinfo.value)
+            assert "modules/networking/vpc.tf" in str(excinfo.value)
+
+    def test_validate_no_provider_blocks_fails_with_multiple_providers(self):
+        """Test that validation fails and reports all files with provider blocks."""
+        import tempfile
+        import os
+        from ftf_cli.utils import validate_no_provider_blocks
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create .tf file with provider block in root
+            main_tf = os.path.join(temp_dir, "main.tf")
+            with open(main_tf, "w") as f:
+                f.write('''
+provider "aws" {
+  region = "us-west-2"
+}
+''')
+            
+            # Create nested directory with another provider block
+            nested_dir = os.path.join(temp_dir, "modules")
+            os.makedirs(nested_dir)
+            nested_tf = os.path.join(nested_dir, "database.tf")
+            with open(nested_tf, "w") as f:
+                f.write('''
+provider "postgresql" {
+  host = "localhost"
+}
+''')
+            
+            # Should raise UsageError mentioning both files
+            with pytest.raises(click.UsageError) as excinfo:
+                validate_no_provider_blocks(temp_dir)
+            
+            error_message = str(excinfo.value)
+            assert "Provider blocks are not allowed in module files" in error_message
+            assert "main.tf" in error_message
+            assert "modules/database.tf" in error_message
+
+    def test_validate_no_provider_blocks_handles_unparseable_files(self):
+        """Test that validation handles unparseable files gracefully."""
+        import tempfile
+        import os
+        from ftf_cli.utils import validate_no_provider_blocks
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create valid .tf file
+            main_tf = os.path.join(temp_dir, "main.tf")
+            with open(main_tf, "w") as f:
+                f.write('''
+resource "aws_instance" "test" {
+  ami = "ami-123456"
+}
+''')
+            
+            # Create invalid .tf file
+            invalid_tf = os.path.join(temp_dir, "invalid.tf")
+            with open(invalid_tf, "w") as f:
+                f.write("this is not valid HCL syntax {{{")
+            
+            # Should pass (with warning) since the valid file has no provider blocks
+            # and the invalid file is just warned about but doesn't fail validation
+            result = validate_no_provider_blocks(temp_dir)
+            assert result is True

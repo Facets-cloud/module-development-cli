@@ -802,8 +802,11 @@ def discover_resources(path: str) -> list[dict]:
 
 
 def validate_no_provider_blocks(path):
-    """Validate that no .tf files contain provider blocks."""
-    tf_files = glob.glob(os.path.join(path, "*.tf"))
+    """Validate that no .tf files contain provider blocks in any directory or subdirectory."""
+    # Get .tf files from root directory and all subdirectories
+    tf_files = glob.glob(os.path.join(path, "*.tf")) + glob.glob(os.path.join(path, "**", "*.tf"), recursive=True)
+    # Remove duplicates (in case a file is found by both patterns)
+    tf_files = list(set(tf_files))
     provider_violations = []
     
     for tf_file in tf_files:
@@ -825,12 +828,15 @@ def validate_no_provider_blocks(path):
                     and child.children[0].children[0].type == "NAME"
                     and child.children[0].children[0].value == "provider"
                 ):
-                    provider_violations.append(os.path.basename(tf_file))
+                    # Store relative path from the base directory for better error reporting
+                    relative_path = os.path.relpath(tf_file, path)
+                    provider_violations.append(relative_path)
                     break  # Found one, no need to check further in this file
                     
         except Exception as e:
             # If file can't be parsed, log warning but don't fail validation
-            click.echo(f"⚠️ Could not parse {os.path.basename(tf_file)}: {e}")
+            relative_path = os.path.relpath(tf_file, path)
+            click.echo(f"⚠️ Could not parse {relative_path}: {e}")
             continue
     
     if provider_violations:
