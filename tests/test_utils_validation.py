@@ -196,3 +196,79 @@ def test_non_dict_values_ignored():
     }
     # Should pass silently
     check_conflicting_ui_properties(spec)
+
+import os
+from ftf_cli.utils import validate_no_provider_blocks
+
+
+def test_module_without_provider_blocks_pass():
+    """Test that modules without provider blocks pass validation."""
+    test_path = os.path.join(os.path.dirname(__file__), "test_data", "module_without_provider")
+    # Should pass silently and return True
+    result = validate_no_provider_blocks(test_path)
+    assert result is True
+
+
+def test_module_with_provider_block_raises():
+    """Test that modules with provider blocks fail validation."""
+    test_path = os.path.join(os.path.dirname(__file__), "test_data", "module_with_provider")
+    with pytest.raises(click.UsageError) as excinfo:
+        validate_no_provider_blocks(test_path)
+    assert "Provider blocks are not allowed in module files" in str(excinfo.value)
+    assert "main.tf" in str(excinfo.value)
+    assert "Use exposed providers in facets.yaml instead" in str(excinfo.value)
+
+
+def test_module_with_multiple_provider_blocks_raises():
+    """Test that modules with multiple provider blocks in different files fail validation."""
+    test_path = os.path.join(os.path.dirname(__file__), "test_data", "module_multiple_providers")
+    with pytest.raises(click.UsageError) as excinfo:
+        validate_no_provider_blocks(test_path)
+    assert "Provider blocks are not allowed in module files" in str(excinfo.value)
+    # Should detect provider blocks in both files
+    error_message = str(excinfo.value)
+    assert ("main.tf" in error_message or "azure.tf" in error_message)
+    assert "Use exposed providers in facets.yaml instead" in str(excinfo.value)
+
+
+def test_empty_directory_pass():
+    """Test that empty directory (no .tf files) passes validation."""
+    test_path = os.path.join(os.path.dirname(__file__), "test_data")
+    # Create an empty test directory
+    empty_dir = os.path.join(test_path, "empty_module")
+    os.makedirs(empty_dir, exist_ok=True)
+    
+    try:
+        result = validate_no_provider_blocks(empty_dir)
+        assert result is True
+    finally:
+        # Clean up
+        if os.path.exists(empty_dir):
+            os.rmdir(empty_dir)
+
+
+def test_module_with_invalid_tf_files_continues():
+    """Test that modules with invalid .tf files continue validation and report only parseable files."""
+    test_path = os.path.join(os.path.dirname(__file__), "test_data")
+    invalid_module_dir = os.path.join(test_path, "module_with_invalid_tf")
+    os.makedirs(invalid_module_dir, exist_ok=True)
+    
+    # Create an invalid .tf file
+    invalid_tf = os.path.join(invalid_module_dir, "invalid.tf")
+    with open(invalid_tf, "w") as f:
+        f.write("this is not valid HCL syntax {\n")
+    
+    # Create a valid .tf file without provider blocks
+    valid_tf = os.path.join(invalid_module_dir, "valid.tf")
+    with open(valid_tf, "w") as f:
+        f.write('resource "aws_instance" "test" {\n  ami = "ami-123"\n}\n')
+    
+    try:
+        # Should pass despite invalid file and print warning
+        result = validate_no_provider_blocks(invalid_module_dir)
+        assert result is True
+    finally:
+        # Clean up
+        os.remove(invalid_tf)
+        os.remove(valid_tf)
+        os.rmdir(invalid_module_dir)

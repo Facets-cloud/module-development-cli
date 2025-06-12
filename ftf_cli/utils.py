@@ -798,3 +798,48 @@ def discover_resources(path: str) -> list[dict]:
             click.echo(f"Error details: {str(e)}")
             sys.exit(1)
     return sorted(resources, key=lambda r: r["address"])
+
+
+
+def validate_no_provider_blocks(path):
+    """Validate that no .tf files contain provider blocks."""
+    tf_files = glob.glob(os.path.join(path, "*.tf"))
+    provider_violations = []
+    
+    for tf_file in tf_files:
+        try:
+            with open(tf_file, "r") as file:
+                # Parse the HCL content directly from file
+                terraform_tree = hcl.parse(file)
+            
+            body_node = terraform_tree.children[0]
+            
+            # Check for provider blocks
+            for child in body_node.children:
+                if (
+                    child.data == "block"
+                    and len(child.children) > 0
+                    and isinstance(child.children[0], Tree)
+                    and child.children[0].data == "identifier"
+                    and isinstance(child.children[0].children[0], Token)
+                    and child.children[0].children[0].type == "NAME"
+                    and child.children[0].children[0].value == "provider"
+                ):
+                    provider_violations.append(os.path.basename(tf_file))
+                    break  # Found one, no need to check further in this file
+                    
+        except Exception as e:
+            # If file can't be parsed, log warning but don't fail validation
+            click.echo(f"⚠️ Could not parse {os.path.basename(tf_file)}: {e}")
+            continue
+    
+    if provider_violations:
+        file_list = ", ".join(provider_violations)
+        raise click.UsageError(
+            f"❌ Provider blocks are not allowed in module files. "
+            f"Found provider blocks in: {file_list}. "
+            f"Use exposed providers in facets.yaml instead."
+        )
+    
+    click.echo("✅ No provider blocks found in Terraform files.")
+    return True

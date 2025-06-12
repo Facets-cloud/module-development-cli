@@ -1,0 +1,12 @@
+intent: test-intent
+flavor: test-flavor
+version: "1.0"
+description: Test module without provider blocks
+clouds:
+  - aws
+spec:
+  type: object
+  properties:
+    instance_type:
+      type: string
+      default: t2.micro
