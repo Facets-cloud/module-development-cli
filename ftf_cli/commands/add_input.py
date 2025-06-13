@@ -1,20 +1,20 @@
-import json
-import re
-from subprocess import run
-import traceback
-import click
 import os
+import re
+import traceback
+from subprocess import run
 
+import click
 import hcl
 import requests
 import yaml
+from lark import Token, Tree
+
 from ftf_cli.utils import (
     is_logged_in,
-    transform_output_tree,
+    transform_properties_to_terraform,
     ensure_formatting_for_object,
     get_profile_with_priority,
 )
-from lark import Token, Tree
 
 
 @click.command()
@@ -126,24 +126,45 @@ def add_input(path, profile, name, display_name, description, output_type):
         registered_output_names = list(registered_outputs.keys())
 
         # make sure all outputs are registered
-
         for output in required_inputs_map.values():
             if output not in registered_output_names:
                 raise click.UsageError(
                     f"❌ {output} not found in registered outputs. Please select a valid output type from {registered_output_names}."
                 )
 
-        # get output tree for each output
-        output_trees = {}
+        # get properties for each output and transform them
+        output_schemas = {}
         for output_name, output in required_inputs_map.items():
-            output_tree_string = registered_outputs[output].get("lookupTree")
-            output_tree = json.loads(output_tree_string) if output_tree_string else None
-            if output_tree and output_tree["out"] != {}:
-                output_trees[output_name] = output_tree["out"]
-            else:
-                output_trees[output_name] = {"attributes": {}, "interfaces": {}}
+            properties = registered_outputs[output].get("properties")
 
-        inputs_var = generate_inputs_variable(output_trees)
+            if properties:
+                try:
+                    # Assume properties has the expected structure with attributes and interfaces
+                    if (properties.get("type") == "object" and
+                            "properties" in properties and
+                            "attributes" in properties["properties"] and
+                            "interfaces" in properties["properties"]):
+
+                        attributes_schema = properties["properties"]["attributes"]
+                        interfaces_schema = properties["properties"]["interfaces"]
+
+                        output_schemas[output_name] = {
+                            "attributes": attributes_schema,
+                            "interfaces": interfaces_schema
+                        }
+                    else:
+                        click.echo(
+                            f"⚠️ Output {output} does not have expected structure (attributes/interfaces). Using default empty structure.")
+                        output_schemas[output_name] = {"attributes": {}, "interfaces": {}}
+
+                except Exception as e:
+                    click.echo(f"⚠️ Error parsing properties for output {output}: {e}. Using default empty structure.")
+                    output_schemas[output_name] = {"attributes": {}, "interfaces": {}}
+            else:
+                click.echo(f"⚠️ Output {output} has no properties defined. Using default empty structure.")
+                output_schemas[output_name] = {"attributes": {}, "interfaces": {}}
+
+        inputs_var = generate_inputs_variable(output_schemas)
 
         replace_inputs_variable(variable_file, inputs_var)
         ensure_formatting_for_object(variable_file)
@@ -161,23 +182,22 @@ def add_input(path, profile, name, display_name, description, output_type):
         raise click.UsageError(f"❌ Error encountered while adding input {name}")
 
 
-def generate_inputs_variable(output_trees):
-    """Generate the Terraform 'inputs' variable schema from the given output tree and name."""
+def generate_inputs_variable(output_schemas):
+    """Generate the Terraform 'inputs' variable schema from the given output schemas."""
 
     generated_inputs = {}
 
-    for tree_name, output_tree in output_trees.items():
+    for schema_name, output_schema in output_schemas.items():
+        # Initialize the schema_name entry in generated_inputs
+        if schema_name not in generated_inputs:
+            generated_inputs[schema_name] = {}
 
-        # Initialize the tree_name entry in generated_inputs
-        if tree_name not in generated_inputs:
-            generated_inputs[tree_name] = {}
-
-        # Transform the output tree into the Terraform schema
-        generated_inputs[tree_name]["attributes"] = transform_output_tree(
-            output_tree["attributes"], level=3
+        # Transform the properties schemas into Terraform schema
+        generated_inputs[schema_name]["attributes"] = transform_properties_to_terraform(
+            output_schema["attributes"], level=3
         )
-        generated_inputs[tree_name]["interfaces"] = transform_output_tree(
-            output_tree["interfaces"], level=3
+        generated_inputs[schema_name]["interfaces"] = transform_properties_to_terraform(
+            output_schema["interfaces"], level=3
         )
 
     # Generate the Terraform variable by iterating over generated inputs
@@ -186,8 +206,8 @@ variable "inputs" {{
   description = "A map of inputs requested by the module developer."
   type        = object({{
     {', '.join([
-        f'{tree_name} = object({{ {", ".join([f"{key} = {value}" for key, value in attributes.items()])} }})'
-        for tree_name, attributes in generated_inputs.items()
+        f'{schema_name} = object({{ {", ".join([f"{key} = {value}" for key, value in attributes.items()])} }})'
+        for schema_name, attributes in generated_inputs.items()
     ])}
   }})
 }}

@@ -58,14 +58,14 @@ def validate_facets_tf_vars(path, filename="variables.tf"):
 
         for child in child_nodes:
             if (
-                child.data == "block"
-                and len(child.children) > 2
-                and isinstance(child.children[0], Tree)
-                and child.children[0].data == "identifier"
-                and isinstance(child.children[0].children[0], Token)
-                and child.children[0].children[0].type == "NAME"
-                and child.children[0].children[0].value == "variable"
-                and child.children[1].type == "STRING_LIT"
+                    child.data == "block"
+                    and len(child.children) > 2
+                    and isinstance(child.children[0], Tree)
+                    and child.children[0].data == "identifier"
+                    and isinstance(child.children[0].children[0], Token)
+                    and child.children[0].children[0].type == "NAME"
+                    and child.children[0].children[0].value == "variable"
+                    and child.children[1].type == "STRING_LIT"
             ):
                 var_name = child.children[1].value
                 var_name = var_name.replace('"', "")
@@ -129,6 +129,45 @@ def generate_output_lookup_tree(obj):
         return {}
     else:
         return {}  # Catch unexpected types
+
+
+def properties_to_lookup_tree(properties):
+    """
+    Convert JSON Schema properties to lookup tree format.
+
+    Args:
+        properties: JSON Schema properties object (dict)
+
+    Returns:
+        dict: Lookup tree with "out" wrapper
+
+    Raises:
+        ValueError: If properties is invalid or malformed
+    """
+    if not isinstance(properties, dict):
+        raise ValueError("Properties must be a dictionary")
+
+    def extract_structure(schema_obj):
+        """Recursively extract just the structure, ignoring types and metadata"""
+        if not isinstance(schema_obj, dict):
+            raise ValueError("Schema object must be a dictionary")
+
+        if schema_obj.get("type") == "object" and "properties" in schema_obj:
+            # Handle object with properties
+            result = {}
+            for key, value in schema_obj["properties"].items():
+                result[key] = extract_structure(value)
+            return result
+        elif schema_obj.get("type") == "array":
+            # Handle arrays - simplify to just empty object
+            return {}
+        else:
+            # For primitive types or any other case, return empty object
+            return {}
+
+    # Extract the structure and wrap in "out" object
+    structure = extract_structure(properties)
+    return {"out": structure}
 
 
 def transform_output_tree(tree, level=1):
@@ -311,11 +350,11 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
 def check_conflicting_ui_properties(spec_obj, path="spec"):
     """
     Recursively check for conflicting UI properties in spec fields.
-    
+
     Validates that:
     1. patternProperties and x-ui-yaml-editor: true are not both present on the same field
     2. x-ui-override-disable: true and x-ui-overrides-only: true are not both present on the same field
-    
+
     Raises UsageError with clear error message if conflicts are found.
     """
     if not isinstance(spec_obj, dict):
@@ -326,7 +365,7 @@ def check_conflicting_ui_properties(spec_obj, path="spec"):
             # Check for patternProperties + x-ui-yaml-editor conflict
             has_pattern_properties = "patternProperties" in value
             has_yaml_editor = value.get("x-ui-yaml-editor", False)
-            
+
             if has_pattern_properties and has_yaml_editor:
                 raise click.UsageError(
                     f"Configuration conflict at {path}.{key}: "
@@ -334,11 +373,11 @@ def check_conflicting_ui_properties(spec_obj, path="spec"):
                     f"These properties are mutually exclusive - use either patternProperties for "
                     f"dynamic key-value structures or x-ui-yaml-editor for free-form YAML editing."
                 )
-            
+
             # Check for x-ui-override-disable + x-ui-overrides-only conflict
             has_override_disable = value.get("x-ui-override-disable", False)
             has_overrides_only = value.get("x-ui-overrides-only", False)
-            
+
             if has_override_disable and has_overrides_only:
                 raise click.UsageError(
                     f"Configuration conflict at {path}.{key}: "
@@ -348,7 +387,7 @@ def check_conflicting_ui_properties(spec_obj, path="spec"):
                     f"'x-ui-overrides-only' is for fields that cannot have a default value in the blueprint "
                     f"and must be specified at environment level via overrides."
                 )
-            
+
             # Recursively check nested properties
             check_conflicting_ui_properties(value, path=f"{path}.{key}")
 
@@ -404,43 +443,43 @@ def store_credentials(profile, credentials):
 
 def set_default_profile(profile):
     """Set the default profile to use for all commands.
-    
+
     This creates a config file at ~/.facets/config that stores the default profile.
     The environment variable FACETS_PROFILE takes precedence over this.
-    
+
     Args:
         profile (str): The profile name to set as default
     """
     config = configparser.ConfigParser()
     config_path = os.path.expanduser("~/.facets/config")
     os.makedirs(os.path.dirname(config_path), exist_ok=True)
-    
+
     if os.path.exists(config_path):
         config.read(config_path)
-    
+
     if 'default' not in config:
         config['default'] = {}
-    
+
     config['default']['profile'] = profile
-    
+
     with open(config_path, "w") as configfile:
         config.write(configfile)
 
 
 def get_default_profile():
     """Get the default profile from the config file.
-    
+
     Returns:
         str: The default profile name or 'default' if not set
     """
     config = configparser.ConfigParser()
     config_path = os.path.expanduser("~/.facets/config")
-    
+
     if os.path.exists(config_path):
         config.read(config_path)
         if 'default' in config and 'profile' in config['default']:
             return config['default']['profile']
-    
+
     return "default"
 
 
@@ -449,7 +488,7 @@ def get_profile_with_priority():
     1. FACETS_PROFILE environment variable if set
     2. Default profile from config file if it exists
     3. 'default' as fallback
-    
+
     Returns:
         str: The profile name to use
     """
@@ -457,7 +496,7 @@ def get_profile_with_priority():
     env_profile = os.getenv("FACETS_PROFILE")
     if env_profile:
         return env_profile
-    
+
     # Then check config file
     return get_default_profile()
 
@@ -730,12 +769,12 @@ def discover_resources(path: str) -> list[dict]:
                 for resource_block in content["resource"]:
                     for resource_type, resources_of_type in resource_block.items():
                         if resource_type.startswith("__") and resource_type.endswith(
-                            "__"
+                                "__"
                         ):
                             continue
                         for resource_name, resource_config in resources_of_type.items():
                             if resource_name.startswith(
-                                "__"
+                                    "__"
                             ) and resource_name.endswith("__"):
                                 continue
                             resource_address = f"{resource_type}.{resource_name}"
@@ -798,3 +837,53 @@ def discover_resources(path: str) -> list[dict]:
             click.echo(f"Error details: {str(e)}")
             sys.exit(1)
     return sorted(resources, key=lambda r: r["address"])
+
+def transform_properties_to_terraform(properties_obj, level=1):
+    """
+    Transform JSON Schema properties directly to Terraform-compatible schema.
+
+    Args:
+        properties_obj: JSON Schema properties object
+        level: Current indentation level
+
+    Returns:
+        str: Terraform-compatible schema string
+    """
+    INDENT = "  "  # Fixed indentation (2 spaces)
+    current_indent = INDENT * level
+    next_indent = INDENT * (level + 1)
+
+    if not isinstance(properties_obj, dict):
+        return "any"
+
+    # Handle object with properties
+    if properties_obj.get("type") == "object" and "properties" in properties_obj:
+        transformed_items = []
+        for key, value in properties_obj["properties"].items():
+            transformed_value = transform_properties_to_terraform(value, level + 1)
+            transformed_items.append(f"{next_indent}{key} = {transformed_value}")
+
+        # Join the transformed items with a comma and newline
+        joined_items = ",\n".join(transformed_items)
+
+        # Construct the object block with proper indentation
+        object_block = f"object({{\n{joined_items}\n{current_indent}}})"
+        return object_block
+
+    # Handle arrays
+    elif properties_obj.get("type") == "array":
+        if "items" in properties_obj:
+            return f"list({transform_properties_to_terraform(properties_obj['items'], level)})"
+        else:
+            return "list(any)"
+
+    # Handle primitive types
+    elif properties_obj.get("type") == "string":
+        return "string"
+    elif properties_obj.get("type") == "number":
+        return "number"
+    elif properties_obj.get("type") == "boolean":
+        return "bool"
+    else:
+        # Fallback for unknown types
+        return "any"

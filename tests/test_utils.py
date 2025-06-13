@@ -186,3 +186,362 @@ def test_lookup_tree_mixed_nested_lists():
         "simple_list": {"type": "array", "items": {}},
     }
     assert generate_output_lookup_tree(input_data) == expected_output
+
+
+import pytest
+from ftf_cli.utils import properties_to_lookup_tree, transform_properties_to_terraform
+
+
+class TestPropertiesToLookupTree:
+    """Test cases for properties_to_lookup_tree function."""
+
+    def test_simple_object_properties(self):
+        """Test with simple object properties."""
+        properties = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "number"},
+                "active": {"type": "boolean"}
+            }
+        }
+        expected = {
+            "out": {
+                "name": {},
+                "age": {},
+                "active": {}
+            }
+        }
+        assert properties_to_lookup_tree(properties) == expected
+
+    def test_nested_object_properties(self):
+        """Test with nested object properties."""
+        properties = {
+            "type": "object",
+            "properties": {
+                "user": {
+                    "type": "object",
+                    "properties": {
+                        "profile": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "email": {"type": "string"}
+                            }
+                        },
+                        "settings": {
+                            "type": "object",
+                            "properties": {
+                                "theme": {"type": "string"}
+                            }
+                        }
+                    }
+                },
+                "metadata": {"type": "string"}
+            }
+        }
+        expected = {
+            "out": {
+                "user": {
+                    "profile": {
+                        "name": {},
+                        "email": {}
+                    },
+                    "settings": {
+                        "theme": {}
+                    }
+                },
+                "metadata": {}
+            }
+        }
+        assert properties_to_lookup_tree(properties) == expected
+
+    def test_array_properties(self):
+        """Test with array properties - should simplify to empty objects."""
+        properties = {
+            "type": "object",
+            "properties": {
+                "tags": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                "users": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"}
+                        }
+                    }
+                }
+            }
+        }
+        expected = {
+            "out": {
+                "tags": {},
+                "users": {}
+            }
+        }
+        assert properties_to_lookup_tree(properties) == expected
+
+    def test_mixed_types(self):
+        """Test with mixed property types."""
+        properties = {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "object",
+                    "properties": {
+                        "database": {
+                            "type": "object",
+                            "properties": {
+                                "host": {"type": "string"},
+                                "port": {"type": "number"},
+                                "enabled": {"type": "boolean"}
+                            }
+                        },
+                        "cache_servers": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        }
+                    }
+                },
+                "version": {"type": "string"},
+                "features": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            }
+        }
+        expected = {
+            "out": {
+                "config": {
+                    "database": {
+                        "host": {},
+                        "port": {},
+                        "enabled": {}
+                    },
+                    "cache_servers": {}
+                },
+                "version": {},
+                "features": {}
+            }
+        }
+        assert properties_to_lookup_tree(properties) == expected
+
+    def test_expected_attributes_interfaces_structure(self):
+        """Test with the expected attributes/interfaces structure."""
+        properties = {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "object",
+                    "properties": {
+                        "cluster_name": {"type": "string"},
+                        "version": {"type": "string"},
+                        "endpoint": {"type": "string"}
+                    }
+                },
+                "interfaces": {
+                    "type": "object",
+                    "properties": {
+                        "reader": {
+                            "type": "object",
+                            "properties": {
+                                "username": {"type": "string"},
+                                "password": {"type": "string"},
+                                "host": {"type": "string"},
+                                "port": {"type": "number"}
+                            }
+                        },
+                        "writer": {
+                            "type": "object",
+                            "properties": {
+                                "username": {"type": "string"},
+                                "password": {"type": "string"},
+                                "host": {"type": "string"},
+                                "port": {"type": "number"}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        expected = {
+            "out": {
+                "attributes": {
+                    "cluster_name": {},
+                    "version": {},
+                    "endpoint": {}
+                },
+                "interfaces": {
+                    "reader": {
+                        "username": {},
+                        "password": {},
+                        "host": {},
+                        "port": {}
+                    },
+                    "writer": {
+                        "username": {},
+                        "password": {},
+                        "host": {},
+                        "port": {}
+                    }
+                }
+            }
+        }
+        assert properties_to_lookup_tree(properties) == expected
+
+    def test_empty_object(self):
+        """Test with empty object properties."""
+        properties = {
+            "type": "object",
+            "properties": {}
+        }
+        expected = {"out": {}}
+        assert properties_to_lookup_tree(properties) == expected
+
+    def test_primitive_type_only(self):
+        """Test with primitive type (should return empty structure)."""
+        properties = {"type": "string"}
+        expected = {"out": {}}
+        assert properties_to_lookup_tree(properties) == expected
+
+    def test_invalid_input_not_dict(self):
+        """Test with invalid input - not a dictionary."""
+        with pytest.raises(ValueError, match="Properties must be a dictionary"):
+            properties_to_lookup_tree("invalid")
+
+        with pytest.raises(ValueError, match="Properties must be a dictionary"):
+            properties_to_lookup_tree(["list", "input"])
+
+        with pytest.raises(ValueError, match="Properties must be a dictionary"):
+            properties_to_lookup_tree(123)
+
+    def test_invalid_nested_schema(self):
+        """Test with invalid nested schema object."""
+        properties = {
+            "type": "object",
+            "properties": {
+                "invalid_field": "not_a_dict"
+            }
+        }
+        with pytest.raises(ValueError, match="Schema object must be a dictionary"):
+            properties_to_lookup_tree(properties)
+
+
+class TestTransformPropertiesToTerraform:
+    """Test cases for transform_properties_to_terraform function."""
+
+    def test_simple_object(self):
+        """Test transforming simple object properties to Terraform."""
+        properties = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "number"},
+                "active": {"type": "boolean"}
+            }
+        }
+        result = transform_properties_to_terraform(properties)
+
+        # Check that it's an object block
+        assert result.startswith("object({")
+        assert result.endswith("})")
+
+        # Check that all fields are present
+        assert "name = string" in result
+        assert "age = number" in result
+        assert "active = bool" in result
+
+    def test_nested_object(self):
+        """Test transforming nested object properties to Terraform."""
+        properties = {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "object",
+                    "properties": {
+                        "host": {"type": "string"},
+                        "port": {"type": "number"}
+                    }
+                }
+            }
+        }
+        result = transform_properties_to_terraform(properties)
+
+        # Should contain nested object structure
+        assert "config = object({" in result
+        assert "host = string" in result
+        assert "port = number" in result
+
+    def test_array_types(self):
+        """Test transforming array properties to Terraform."""
+        properties = {
+            "type": "object",
+            "properties": {
+                "tags": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                "counts": {
+                    "type": "array",
+                    "items": {"type": "number"}
+                },
+                "simple_array": {
+                    "type": "array"
+                }
+            }
+        }
+        result = transform_properties_to_terraform(properties)
+
+        assert "tags = list(string)" in result
+        assert "counts = list(number)" in result
+        assert "simple_array = list(any)" in result
+
+    def test_primitive_types(self):
+        """Test all primitive type conversions."""
+        # String type
+        assert transform_properties_to_terraform({"type": "string"}) == "string"
+
+        # Number type
+        assert transform_properties_to_terraform({"type": "number"}) == "number"
+
+        # Boolean type
+        assert transform_properties_to_terraform({"type": "boolean"}) == "bool"
+
+        # Unknown type
+        assert transform_properties_to_terraform({"type": "unknown"}) == "any"
+
+    def test_non_dict_input(self):
+        """Test with non-dictionary input."""
+        assert transform_properties_to_terraform("invalid") == "any"
+        assert transform_properties_to_terraform(123) == "any"
+        assert transform_properties_to_terraform(None) == "any"
+
+    def test_indentation_levels(self):
+        """Test that indentation is properly applied at different levels."""
+        properties = {
+            "type": "object",
+            "properties": {
+                "level1": {
+                    "type": "object",
+                    "properties": {
+                        "level2": {
+                            "type": "object",
+                            "properties": {
+                                "field": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        result = transform_properties_to_terraform(properties, level=1)
+
+        # Check indentation patterns (should have proper spacing)
+        lines = result.split('\n')
+        # Should have different indentation levels
+        assert any('  level1 = object({' in line for line in lines)
+        assert any('    level2 = object({' in line for line in lines)
+        assert any('      field = string' in line for line in lines)
