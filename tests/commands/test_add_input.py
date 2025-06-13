@@ -1,11 +1,11 @@
-import pytest
-from click.testing import CliRunner
-from unittest.mock import patch, mock_open, MagicMock
-import yaml
-import json
 import os
-import tempfile
 import shutil
+import tempfile
+from unittest.mock import patch, MagicMock
+
+import pytest
+import yaml
+from click.testing import CliRunner
 
 from ftf_cli.commands.add_input import add_input, generate_inputs_variable
 
@@ -141,7 +141,7 @@ variable "environment" {
         """Test successfully adding an input."""
         with patch('ftf_cli.commands.add_input.is_logged_in', return_value=mock_credentials), \
                 patch('requests.get') as mock_requests, \
-                patch('subprocess.run', return_value=MagicMock(returncode=0)), \
+                patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)), \
                 patch('ftf_cli.utils.ensure_formatting_for_object'):
 
             # Setup API response
@@ -179,7 +179,8 @@ variable "environment" {
         """Test error when required files are missing."""
         with tempfile.TemporaryDirectory() as temp_dir, \
                 patch('ftf_cli.commands.add_input.is_logged_in',
-                      return_value={'control_plane_url': 'test', 'username': 'test', 'token': 'test'}):
+                      return_value={'control_plane_url': 'test', 'username': 'test', 'token': 'test'}), \
+                patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)):
             # Empty directory - no facets.yaml or variables.tf
             result = runner.invoke(add_input, [
                 temp_dir,
@@ -195,7 +196,7 @@ variable "environment" {
     def test_not_logged_in_error(self, runner, temp_dir):
         """Test error when user is not logged in."""
         with patch('ftf_cli.commands.add_input.is_logged_in', return_value=False), \
-                patch('subprocess.run', return_value=MagicMock(returncode=0)):
+                patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)):
             result = runner.invoke(add_input, [
                 temp_dir,
                 '--name', 'test_input',
@@ -211,7 +212,7 @@ variable "environment" {
         """Test error when requested output type is not found."""
         with patch('ftf_cli.commands.add_input.is_logged_in', return_value=mock_credentials), \
                 patch('requests.get') as mock_requests, \
-                patch('subprocess.run', return_value=MagicMock(returncode=0)):
+                patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)):
             # Setup API response
             mock_response = MagicMock()
             mock_response.json.return_value = sample_api_response
@@ -247,7 +248,7 @@ variable "environment" {
 
         with patch('ftf_cli.commands.add_input.is_logged_in', return_value=mock_credentials), \
                 patch('requests.get') as mock_requests, \
-                patch('subprocess.run', return_value=MagicMock(returncode=0)), \
+                patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)), \
                 patch('ftf_cli.utils.ensure_formatting_for_object'):
             # Setup API response
             mock_response = MagicMock()
@@ -280,7 +281,7 @@ variable "environment" {
 
         with patch('ftf_cli.commands.add_input.is_logged_in', return_value=mock_credentials), \
                 patch('requests.get') as mock_requests, \
-                patch('subprocess.run', return_value=MagicMock(returncode=0)), \
+                patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)), \
                 patch('ftf_cli.utils.ensure_formatting_for_object'):
             # Setup API response
             mock_response = MagicMock()
@@ -329,7 +330,7 @@ variable "environment" {
 
             with patch('ftf_cli.commands.add_input.is_logged_in', return_value=mock_credentials), \
                     patch('requests.get') as mock_requests, \
-                    patch('subprocess.run', return_value=MagicMock(returncode=0)), \
+                    patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)), \
                     patch('ftf_cli.utils.ensure_formatting_for_object'):
                 # Setup API response
                 mock_response = MagicMock()
@@ -352,7 +353,8 @@ variable "environment" {
     def test_nonexistent_path_error(self, runner):
         """Test error when path doesn't exist."""
         with patch('ftf_cli.commands.add_input.is_logged_in',
-                   return_value={'control_plane_url': 'test', 'username': 'test', 'token': 'test'}):
+                   return_value={'control_plane_url': 'test', 'username': 'test', 'token': 'test'}), \
+             patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)):
             result = runner.invoke(add_input, [
                 '/nonexistent/path',
                 '--name', 'test_input',
