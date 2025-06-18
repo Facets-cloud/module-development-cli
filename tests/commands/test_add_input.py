@@ -141,8 +141,6 @@ variable "environment" {
         with patch(
             "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
         ), patch("requests.get") as mock_requests, patch(
-            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
-        ), patch(
             "ftf_cli.utils.ensure_formatting_for_object"
         ):
 
@@ -194,8 +192,6 @@ variable "environment" {
                 "username": "test",
                 "token": "test",
             },
-        ), patch(
-            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
         ):
             # Empty directory - no facets.yaml or variables.tf
             result = runner.invoke(
@@ -220,8 +216,6 @@ variable "environment" {
         """Test error when user is not logged in."""
         with patch(
             "ftf_cli.commands.add_input.is_logged_in", return_value=False
-        ), patch(
-            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
         ):
             result = runner.invoke(
                 add_input,
@@ -247,9 +241,7 @@ variable "environment" {
         """Test error when requested output type is not found."""
         with patch(
             "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
-        ), patch("requests.get") as mock_requests, patch(
-            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
-        ):
+        ), patch("requests.get") as mock_requests:
             # Setup API response
             mock_response = MagicMock()
             mock_response.json.return_value = sample_api_response
@@ -294,8 +286,6 @@ variable "environment" {
         with patch(
             "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
         ), patch("requests.get") as mock_requests, patch(
-            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
-        ), patch(
             "ftf_cli.utils.ensure_formatting_for_object"
         ):
             # Setup API response
@@ -338,8 +328,6 @@ variable "environment" {
         with patch(
             "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
         ), patch("requests.get") as mock_requests, patch(
-            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
-        ), patch(
             "ftf_cli.utils.ensure_formatting_for_object"
         ):
             # Setup API response
@@ -439,8 +427,6 @@ variable "environment" {
                 "username": "test",
                 "token": "test",
             },
-        ), patch(
-            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
         ):
             result = runner.invoke(
                 add_input,
