@@ -1,6 +1,5 @@
 import os
 import re
-import traceback
 from subprocess import run
 
 import click
@@ -140,28 +139,38 @@ def add_input(path, profile, name, display_name, description, output_type):
             if properties:
                 try:
                     # Assume properties has the expected structure with attributes and interfaces
-                    if (properties.get("type") == "object" and
-                            "properties" in properties and
-                            "attributes" in properties["properties"] and
-                            "interfaces" in properties["properties"]):
+                    if (
+                        properties.get("type") == "object"
+                        and "properties" in properties
+                        and "attributes" in properties["properties"]
+                        and "interfaces" in properties["properties"]
+                    ):
 
                         attributes_schema = properties["properties"]["attributes"]
                         interfaces_schema = properties["properties"]["interfaces"]
 
                         output_schemas[output_name] = {
                             "attributes": attributes_schema,
-                            "interfaces": interfaces_schema
+                            "interfaces": interfaces_schema,
                         }
                     else:
                         click.echo(
-                            f"⚠️ Output {output} does not have expected structure (attributes/interfaces). Using default empty structure.")
-                        output_schemas[output_name] = {"attributes": {}, "interfaces": {}}
+                            f"⚠️ Output {output} does not have expected structure (attributes/interfaces). Using default empty structure."
+                        )
+                        output_schemas[output_name] = {
+                            "attributes": {},
+                            "interfaces": {},
+                        }
 
                 except Exception as e:
-                    click.echo(f"⚠️ Error parsing properties for output {output}: {e}. Using default empty structure.")
+                    click.echo(
+                        f"⚠️ Error parsing properties for output {output}: {e}. Using default empty structure."
+                    )
                     output_schemas[output_name] = {"attributes": {}, "interfaces": {}}
             else:
-                click.echo(f"⚠️ Output {output} has no properties defined. Using default empty structure.")
+                click.echo(
+                    f"⚠️ Output {output} has no properties defined. Using default empty structure."
+                )
                 output_schemas[output_name] = {"attributes": {}, "interfaces": {}}
 
         inputs_var = generate_inputs_variable(output_schemas)
@@ -178,7 +187,6 @@ def add_input(path, profile, name, display_name, description, output_type):
         click.echo(f"✅ Input added to the {facets_yaml}.")
 
     except Exception:
-        traceback.print_exc()
         raise click.UsageError(f"❌ Error encountered while adding input {name}")
 
 

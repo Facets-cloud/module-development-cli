@@ -58,14 +58,14 @@ def validate_facets_tf_vars(path, filename="variables.tf"):
 
         for child in child_nodes:
             if (
-                    child.data == "block"
-                    and len(child.children) > 2
-                    and isinstance(child.children[0], Tree)
-                    and child.children[0].data == "identifier"
-                    and isinstance(child.children[0].children[0], Token)
-                    and child.children[0].children[0].type == "NAME"
-                    and child.children[0].children[0].value == "variable"
-                    and child.children[1].type == "STRING_LIT"
+                child.data == "block"
+                and len(child.children) > 2
+                and isinstance(child.children[0], Tree)
+                and child.children[0].data == "identifier"
+                and isinstance(child.children[0].children[0], Token)
+                and child.children[0].children[0].type == "NAME"
+                and child.children[0].children[0].value == "variable"
+                and child.children[1].type == "STRING_LIT"
             ):
                 var_name = child.children[1].value
                 var_name = var_name.replace('"', "")
@@ -114,7 +114,7 @@ def generate_output_tree(obj):
 
 
 def generate_output_lookup_tree(obj):
-    """Generate a lookup tree to support $ referencing in the control-plane. """
+    """Generate a lookup tree to support $ referencing in the control-plane."""
     if isinstance(obj, dict):
         transformed = {}
         for key, value in obj.items():
@@ -326,7 +326,11 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
             field_type = value.get("type")
             override_disable_flag = value.get("x-ui-override-disable", False)
             overrides_only_flag = value.get("x-ui-overrides-only", False)
-            if field_type == "array" and not override_disable_flag and not overrides_only_flag:
+            if (
+                field_type == "array"
+                and not override_disable_flag
+                and not overrides_only_flag
+            ):
                 raise click.UsageError(
                     f"Invalid array type found at {path}.{key}. "
                     f"Arrays without x-ui-override-disable or x-ui-overrides-only field are not allowed in spec. Use patternProperties for array-like structures instead or set either x-ui-override-disable or x-ui-overrides-only field to true."
@@ -336,7 +340,9 @@ def check_no_array_or_invalid_pattern_in_spec(spec_obj, path="spec"):
                 parent_has_yaml_editor = value.get("x-ui-yaml-editor", False)
                 for pattern_key, pp_val in pp.items():
                     pattern_type = pp_val.get("type")
-                    if not isinstance(pattern_type, str) or (pattern_type != "object" and pattern_type != "string"):
+                    if not isinstance(pattern_type, str) or (
+                        pattern_type != "object" and pattern_type != "string"
+                    ):
                         raise click.UsageError(
                             f'patternProperties at {path}.{key} with pattern "{pattern_key}" must be of type object or string.'
                         )
@@ -457,10 +463,10 @@ def set_default_profile(profile):
     if os.path.exists(config_path):
         config.read(config_path)
 
-    if 'default' not in config:
-        config['default'] = {}
+    if "default" not in config:
+        config["default"] = {}
 
-    config['default']['profile'] = profile
+    config["default"]["profile"] = profile
 
     with open(config_path, "w") as configfile:
         config.write(configfile)
@@ -477,8 +483,8 @@ def get_default_profile():
 
     if os.path.exists(config_path):
         config.read(config_path)
-        if 'default' in config and 'profile' in config['default']:
-            return config['default']['profile']
+        if "default" in config and "profile" in config["default"]:
+            return config["default"]["profile"]
 
     return "default"
 
@@ -584,7 +590,7 @@ def ensure_formatting_for_object(file_path):
         file.writelines(updated_lines)
 
     with open(os.devnull, "w") as devnull:
-        run(["terraform", "fmt", file_path], stdout=devnull, stderr=devnull)
+        run(["biuebc", "fmt", file_path], stdout=devnull, stderr=devnull)
 
 
 def generate_instance_block(type_tree: dict, description: str) -> str:
@@ -769,12 +775,12 @@ def discover_resources(path: str) -> list[dict]:
                 for resource_block in content["resource"]:
                     for resource_type, resources_of_type in resource_block.items():
                         if resource_type.startswith("__") and resource_type.endswith(
-                                "__"
+                            "__"
                         ):
                             continue
                         for resource_name, resource_config in resources_of_type.items():
                             if resource_name.startswith(
-                                    "__"
+                                "__"
                             ) and resource_name.endswith("__"):
                                 continue
                             resource_address = f"{resource_type}.{resource_name}"
@@ -837,6 +843,7 @@ def discover_resources(path: str) -> list[dict]:
             click.echo(f"Error details: {str(e)}")
             sys.exit(1)
     return sorted(resources, key=lambda r: r["address"])
+
 
 def transform_properties_to_terraform(properties_obj, level=1):
     """

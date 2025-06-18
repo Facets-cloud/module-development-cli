@@ -212,9 +212,7 @@ variable "environment" {
 
     def test_not_logged_in_error(self, runner, temp_dir):
         """Test error when user is not logged in."""
-        with patch(
-            "ftf_cli.commands.add_input.is_logged_in", return_value=False
-        ):
+        with patch("ftf_cli.commands.add_input.is_logged_in", return_value=False):
             result = runner.invoke(
                 add_input,
                 [

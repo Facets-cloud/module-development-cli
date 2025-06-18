@@ -108,7 +108,7 @@ spec_schema = {
         "x-ui-secret-ref": {"type": "boolean"},
         "x-ui-dynamic-enum": {
             "type": "string",
-            "pattern": r"^spec\.([a-zA-Z0-9_-]+|\*)(\.[a-zA-Z0-9_-]+|\.\*)*$"
+            "pattern": r"^spec\.([a-zA-Z0-9_-]+|\*)(\.[a-zA-Z0-9_-]+|\.\*)*$",
         },
         "x-ui-overrides-only": {"type": "boolean"},
         "x-ui-override-disable": {"type": "boolean"},

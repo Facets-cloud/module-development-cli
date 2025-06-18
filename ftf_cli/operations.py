@@ -58,14 +58,14 @@ def create_module_zip(path: str) -> str:
 
 
 def register_module(
-        control_plane_url: str,
-        username: str,
-        token: str,
-        path: str,
-        git_url: Optional[str] = None,
-        git_ref: Optional[str] = None,
-        is_feature_branch: bool = False,
-        auto_create: bool = False,
+    control_plane_url: str,
+    username: str,
+    token: str,
+    path: str,
+    git_url: Optional[str] = None,
+    git_ref: Optional[str] = None,
+    is_feature_branch: bool = False,
+    auto_create: bool = False,
 ) -> None:
     """Register a module with the control plane"""
 
@@ -154,12 +154,12 @@ def register_module(
 
 
 def publish_module(
-        control_plane_url: str,
-        username: str,
-        token: str,
-        intent: str,
-        flavor: str,
-        version: str,
+    control_plane_url: str,
+    username: str,
+    token: str,
+    intent: str,
+    flavor: str,
+    version: str,
 ) -> None:
     """Publish a module to make it available for production use"""
 

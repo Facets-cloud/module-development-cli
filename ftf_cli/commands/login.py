@@ -1,4 +1,5 @@
 """Login command for the FTF CLI."""
+
 import configparser
 import os
 from urllib.parse import urlparse
@@ -30,7 +31,7 @@ def login(profile, username, token, control_plane_url):
             # Profile doesn't exist, ask user if they want to create it
             if not click.confirm(
                 f"Profile '{profile}' doesn't exist. Do you want to create it?",
-                default=True
+                default=True,
             ):
                 click.echo("Login cancelled.")
                 return
@@ -38,8 +39,10 @@ def login(profile, username, token, control_plane_url):
             skip_existing_profile_selection = True
 
     # Skip existing profile selection if all args provided OR creating new profile
-    if (not (username and token and control_plane_url and profile) and
-        not skip_existing_profile_selection):
+    if (
+        not (username and token and control_plane_url and profile)
+        and not skip_existing_profile_selection
+    ):
         # Try to use existing profile if not all arguments are provided
         if use_existing_profile():
             return
@@ -121,7 +124,7 @@ def use_existing_profile():
 
     if not click.confirm(
         "Do you want to use an existing profile or login with a new profile?",
-        default=False
+        default=False,
     ):
         return False
 
