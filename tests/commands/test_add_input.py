@@ -22,7 +22,7 @@ class TestAddInputCommand:
         return {
             "control_plane_url": "https://test.example.com",
             "username": "testuser",
-            "token": "testtoken"
+            "token": "testtoken",
         }
 
     @pytest.fixture
@@ -31,12 +31,12 @@ class TestAddInputCommand:
             "intent": "test_module",
             "flavor": "test_flavor",
             "version": "1.0.0",
-            "inputs": {}
+            "inputs": {},
         }
 
     @pytest.fixture
     def sample_variables_tf(self):
-        return '''variable "instance" {
+        return """variable "instance" {
   description = "Instance configuration"
   type = object({
     kind    = string
@@ -54,7 +54,7 @@ variable "environment" {
   description = "Environment name"
   type = string
 }
-'''
+"""
 
     @pytest.fixture
     def sample_api_response(self):
@@ -69,8 +69,8 @@ variable "environment" {
                             "properties": {
                                 "host": {"type": "string"},
                                 "port": {"type": "number"},
-                                "name": {"type": "string"}
-                            }
+                                "name": {"type": "string"},
+                            },
                         },
                         "interfaces": {
                             "type": "object",
@@ -80,21 +80,21 @@ variable "environment" {
                                     "properties": {
                                         "username": {"type": "string"},
                                         "password": {"type": "string"},
-                                        "connection_string": {"type": "string"}
-                                    }
+                                        "connection_string": {"type": "string"},
+                                    },
                                 },
                                 "writer": {
                                     "type": "object",
                                     "properties": {
                                         "username": {"type": "string"},
                                         "password": {"type": "string"},
-                                        "connection_string": {"type": "string"}
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                                        "connection_string": {"type": "string"},
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             },
             {
                 "name": "cache",
@@ -105,16 +105,13 @@ variable "environment" {
                             "type": "object",
                             "properties": {
                                 "endpoint": {"type": "string"},
-                                "port": {"type": "number"}
-                            }
+                                "port": {"type": "number"},
+                            },
                         },
-                        "interfaces": {
-                            "type": "object",
-                            "properties": {}
-                        }
-                    }
-                }
-            }
+                        "interfaces": {"type": "object", "properties": {}},
+                    },
+                },
+            },
         ]
 
     @pytest.fixture
@@ -124,12 +121,12 @@ variable "environment" {
 
         # Create facets.yaml
         facets_path = os.path.join(temp_dir, "facets.yaml")
-        with open(facets_path, 'w') as f:
+        with open(facets_path, "w") as f:
             yaml.dump(sample_facets_yaml, f)
 
         # Create variables.tf
         variables_path = os.path.join(temp_dir, "variables.tf")
-        with open(variables_path, 'w') as f:
+        with open(variables_path, "w") as f:
             f.write(sample_variables_tf)
 
         yield temp_dir
@@ -137,26 +134,39 @@ variable "environment" {
         # Cleanup
         shutil.rmtree(temp_dir)
 
-    def test_successful_add_input(self, runner, mock_credentials, temp_dir, sample_api_response):
+    def test_successful_add_input(
+        self, runner, mock_credentials, temp_dir, sample_api_response
+    ):
         """Test successfully adding an input."""
-        with patch('ftf_cli.commands.add_input.is_logged_in', return_value=mock_credentials), \
-                patch('requests.get') as mock_requests, \
-                patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)), \
-                patch('ftf_cli.utils.ensure_formatting_for_object'):
+        with patch(
+            "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
+        ), patch("requests.get") as mock_requests, patch(
+            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
+        ), patch(
+            "ftf_cli.utils.ensure_formatting_for_object"
+        ):
 
             # Setup API response
             mock_response = MagicMock()
             mock_response.json.return_value = sample_api_response
             mock_requests.return_value = mock_response
 
-            result = runner.invoke(add_input, [
-                temp_dir,
-                '--name', 'db_connection',
-                '--display-name', 'Database Connection',
-                '--description', 'Database connection configuration',
-                '--output-type', 'database',
-                '--profile', 'test'
-            ])
+            result = runner.invoke(
+                add_input,
+                [
+                    temp_dir,
+                    "--name",
+                    "db_connection",
+                    "--display-name",
+                    "Database Connection",
+                    "--description",
+                    "Database connection configuration",
+                    "--output-type",
+                    "database",
+                    "--profile",
+                    "test",
+                ],
+            )
 
             # Print output for debugging
             if result.exit_code != 0:
@@ -171,61 +181,96 @@ variable "environment" {
 
             # Verify API call was made
             mock_requests.assert_called_once_with(
-                'https://test.example.com/cc-ui/v1/tf-outputs',
-                auth=('testuser', 'testtoken')
+                "https://test.example.com/cc-ui/v1/tf-outputs",
+                auth=("testuser", "testtoken"),
             )
 
     def test_missing_files_error(self, runner):
         """Test error when required files are missing."""
-        with tempfile.TemporaryDirectory() as temp_dir, \
-                patch('ftf_cli.commands.add_input.is_logged_in',
-                      return_value={'control_plane_url': 'test', 'username': 'test', 'token': 'test'}), \
-                patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)):
+        with tempfile.TemporaryDirectory() as temp_dir, patch(
+            "ftf_cli.commands.add_input.is_logged_in",
+            return_value={
+                "control_plane_url": "test",
+                "username": "test",
+                "token": "test",
+            },
+        ), patch(
+            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
+        ):
             # Empty directory - no facets.yaml or variables.tf
-            result = runner.invoke(add_input, [
-                temp_dir,
-                '--name', 'test_input',
-                '--display-name', 'Test Input',
-                '--description', 'Test description',
-                '--output-type', 'database'
-            ])
+            result = runner.invoke(
+                add_input,
+                [
+                    temp_dir,
+                    "--name",
+                    "test_input",
+                    "--display-name",
+                    "Test Input",
+                    "--description",
+                    "Test description",
+                    "--output-type",
+                    "database",
+                ],
+            )
 
             assert result.exit_code != 0
             assert "not found" in result.output
 
     def test_not_logged_in_error(self, runner, temp_dir):
         """Test error when user is not logged in."""
-        with patch('ftf_cli.commands.add_input.is_logged_in', return_value=False), \
-                patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)):
-            result = runner.invoke(add_input, [
-                temp_dir,
-                '--name', 'test_input',
-                '--display-name', 'Test Input',
-                '--description', 'Test description',
-                '--output-type', 'database'
-            ])
+        with patch(
+            "ftf_cli.commands.add_input.is_logged_in", return_value=False
+        ), patch(
+            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
+        ):
+            result = runner.invoke(
+                add_input,
+                [
+                    temp_dir,
+                    "--name",
+                    "test_input",
+                    "--display-name",
+                    "Test Input",
+                    "--description",
+                    "Test description",
+                    "--output-type",
+                    "database",
+                ],
+            )
 
             assert result.exit_code != 0
             assert "Not logged in" in result.output
 
-    def test_output_not_found_error(self, runner, mock_credentials, temp_dir, sample_api_response):
+    def test_output_not_found_error(
+        self, runner, mock_credentials, temp_dir, sample_api_response
+    ):
         """Test error when requested output type is not found."""
-        with patch('ftf_cli.commands.add_input.is_logged_in', return_value=mock_credentials), \
-                patch('requests.get') as mock_requests, \
-                patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)):
+        with patch(
+            "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
+        ), patch("requests.get") as mock_requests, patch(
+            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
+        ):
             # Setup API response
             mock_response = MagicMock()
             mock_response.json.return_value = sample_api_response
             mock_requests.return_value = mock_response
 
-            result = runner.invoke(add_input, [
-                temp_dir,
-                '--name', 'test_input',
-                '--display-name', 'Test Input',
-                '--description', 'Test description',
-                '--output-type', 'nonexistent',  # This output doesn't exist
-                '--profile', 'test'
-            ])
+            result = runner.invoke(
+                add_input,
+                [
+                    temp_dir,
+                    "--name",
+                    "test_input",
+                    "--display-name",
+                    "Test Input",
+                    "--description",
+                    "Test description",
+                    "--output-type",
+                    "nonexistent",  # This output doesn't exist
+                    "--profile",
+                    "test",
+                ],
+            )
 
             assert result.exit_code != 0
             assert "not found in registered outputs" in result.output
@@ -241,28 +286,39 @@ variable "environment" {
                     "properties": {
                         "invalid_structure": {"type": "string"}
                         # Missing attributes/interfaces structure
-                    }
-                }
+                    },
+                },
             }
         ]
 
-        with patch('ftf_cli.commands.add_input.is_logged_in', return_value=mock_credentials), \
-                patch('requests.get') as mock_requests, \
-                patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)), \
-                patch('ftf_cli.utils.ensure_formatting_for_object'):
+        with patch(
+            "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
+        ), patch("requests.get") as mock_requests, patch(
+            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
+        ), patch(
+            "ftf_cli.utils.ensure_formatting_for_object"
+        ):
             # Setup API response
             mock_response = MagicMock()
             mock_response.json.return_value = malformed_api_response
             mock_requests.return_value = mock_response
 
-            result = runner.invoke(add_input, [
-                temp_dir,
-                '--name', 'test_input',
-                '--display-name', 'Test Input',
-                '--description', 'Test description',
-                '--output-type', 'malformed',
-                '--profile', 'test'
-            ])
+            result = runner.invoke(
+                add_input,
+                [
+                    temp_dir,
+                    "--name",
+                    "test_input",
+                    "--display-name",
+                    "Test Input",
+                    "--description",
+                    "Test description",
+                    "--output-type",
+                    "malformed",
+                    "--profile",
+                    "test",
+                ],
+            )
 
             # Should succeed but show warning about malformed structure
             assert result.exit_code == 0
@@ -279,30 +335,43 @@ variable "environment" {
             }
         ]
 
-        with patch('ftf_cli.commands.add_input.is_logged_in', return_value=mock_credentials), \
-                patch('requests.get') as mock_requests, \
-                patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)), \
-                patch('ftf_cli.utils.ensure_formatting_for_object'):
+        with patch(
+            "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
+        ), patch("requests.get") as mock_requests, patch(
+            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
+        ), patch(
+            "ftf_cli.utils.ensure_formatting_for_object"
+        ):
             # Setup API response
             mock_response = MagicMock()
             mock_response.json.return_value = no_properties_response
             mock_requests.return_value = mock_response
 
-            result = runner.invoke(add_input, [
-                temp_dir,
-                '--name', 'test_input',
-                '--display-name', 'Test Input',
-                '--description', 'Test description',
-                '--output-type', 'no_props',
-                '--profile', 'test'
-            ])
+            result = runner.invoke(
+                add_input,
+                [
+                    temp_dir,
+                    "--name",
+                    "test_input",
+                    "--display-name",
+                    "Test Input",
+                    "--description",
+                    "Test description",
+                    "--output-type",
+                    "no_props",
+                    "--profile",
+                    "test",
+                ],
+            )
 
             # Should succeed but show warning about missing properties
             assert result.exit_code == 0
             assert "has no properties defined" in result.output
             assert "Using default empty structure" in result.output
 
-    def test_existing_input_overwrite_warning(self, runner, mock_credentials, sample_api_response):
+    def test_existing_input_overwrite_warning(
+        self, runner, mock_credentials, sample_api_response
+    ):
         """Test warning when overwriting existing input."""
         # Create temp dir with existing input in facets.yaml
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -314,37 +383,48 @@ variable "environment" {
                     "existing_input": {
                         "type": "@outputs/database",
                         "displayName": "Existing Input",
-                        "description": "Existing description"
+                        "description": "Existing description",
                     }
-                }
+                },
             }
 
             # Create files
             facets_path = os.path.join(temp_dir, "facets.yaml")
-            with open(facets_path, 'w') as f:
+            with open(facets_path, "w") as f:
                 yaml.dump(existing_facets_yaml, f)
 
             variables_path = os.path.join(temp_dir, "variables.tf")
-            with open(variables_path, 'w') as f:
+            with open(variables_path, "w") as f:
                 f.write('variable "instance" { type = string }')
 
-            with patch('ftf_cli.commands.add_input.is_logged_in', return_value=mock_credentials), \
-                    patch('requests.get') as mock_requests, \
-                    patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)), \
-                    patch('ftf_cli.utils.ensure_formatting_for_object'):
+            with patch(
+                "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
+            ), patch("requests.get") as mock_requests, patch(
+                "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
+            ), patch(
+                "ftf_cli.utils.ensure_formatting_for_object"
+            ):
                 # Setup API response
                 mock_response = MagicMock()
                 mock_response.json.return_value = sample_api_response
                 mock_requests.return_value = mock_response
 
-                result = runner.invoke(add_input, [
-                    temp_dir,
-                    '--name', 'existing_input',  # Same name as existing
-                    '--display-name', 'Updated Input',
-                    '--description', 'Updated description',
-                    '--output-type', 'database',
-                    '--profile', 'test'
-                ])
+                result = runner.invoke(
+                    add_input,
+                    [
+                        temp_dir,
+                        "--name",
+                        "existing_input",  # Same name as existing
+                        "--display-name",
+                        "Updated Input",
+                        "--description",
+                        "Updated description",
+                        "--output-type",
+                        "database",
+                        "--profile",
+                        "test",
+                    ],
+                )
 
                 assert result.exit_code == 0
                 assert "already exists" in result.output
@@ -352,16 +432,30 @@ variable "environment" {
 
     def test_nonexistent_path_error(self, runner):
         """Test error when path doesn't exist."""
-        with patch('ftf_cli.commands.add_input.is_logged_in',
-                   return_value={'control_plane_url': 'test', 'username': 'test', 'token': 'test'}), \
-             patch('ftf_cli.commands.add_input.run', return_value=MagicMock(returncode=0)):
-            result = runner.invoke(add_input, [
-                '/nonexistent/path',
-                '--name', 'test_input',
-                '--display-name', 'Test Input',
-                '--description', 'Test description',
-                '--output-type', 'database'
-            ])
+        with patch(
+            "ftf_cli.commands.add_input.is_logged_in",
+            return_value={
+                "control_plane_url": "test",
+                "username": "test",
+                "token": "test",
+            },
+        ), patch(
+            "ftf_cli.commands.add_input.run", return_value=MagicMock(returncode=0)
+        ):
+            result = runner.invoke(
+                add_input,
+                [
+                    "/nonexistent/path",
+                    "--name",
+                    "test_input",
+                    "--display-name",
+                    "Test Input",
+                    "--description",
+                    "Test description",
+                    "--output-type",
+                    "database",
+                ],
+            )
 
             assert result.exit_code == 2  # Click validation error
             assert "does not exist" in result.output
@@ -378,20 +472,18 @@ class TestGenerateInputsVariable:
                     "type": "object",
                     "properties": {
                         "host": {"type": "string"},
-                        "port": {"type": "number"}
-                    }
+                        "port": {"type": "number"},
+                    },
                 },
                 "interfaces": {
                     "type": "object",
                     "properties": {
                         "reader": {
                             "type": "object",
-                            "properties": {
-                                "username": {"type": "string"}
-                            }
+                            "properties": {"username": {"type": "string"}},
                         }
-                    }
-                }
+                    },
+                },
             }
         }
 
@@ -399,13 +491,16 @@ class TestGenerateInputsVariable:
 
         # Check basic structure
         assert 'variable "inputs"' in result
-        assert 'description = "A map of inputs requested by the module developer."' in result
-        assert 'type        = object({' in result
+        assert (
+            'description = "A map of inputs requested by the module developer."'
+            in result
+        )
+        assert "type        = object({" in result
 
         # Check that db schema is included
-        assert 'db = object({' in result
-        assert 'attributes = object({' in result
-        assert 'interfaces = object({' in result
+        assert "db = object({" in result
+        assert "attributes = object({" in result
+        assert "interfaces = object({" in result
 
     def test_empty_schemas(self):
         """Test generating Terraform variable from empty schemas."""
@@ -415,25 +510,31 @@ class TestGenerateInputsVariable:
 
         # Should still generate valid Terraform variable structure
         assert 'variable "inputs"' in result
-        assert 'type        = object({' in result
+        assert "type        = object({" in result
         # But with no content inside the object
-        assert result.count('=') == 2  # Only the description and type assignments
+        assert result.count("=") == 2  # Only the description and type assignments
 
     def test_multiple_schemas(self):
         """Test generating Terraform variable from multiple schemas."""
         output_schemas = {
             "database": {
-                "attributes": {"type": "object", "properties": {"host": {"type": "string"}}},
-                "interfaces": {"type": "object", "properties": {}}
+                "attributes": {
+                    "type": "object",
+                    "properties": {"host": {"type": "string"}},
+                },
+                "interfaces": {"type": "object", "properties": {}},
             },
             "cache": {
-                "attributes": {"type": "object", "properties": {"endpoint": {"type": "string"}}},
-                "interfaces": {"type": "object", "properties": {}}
-            }
+                "attributes": {
+                    "type": "object",
+                    "properties": {"endpoint": {"type": "string"}},
+                },
+                "interfaces": {"type": "object", "properties": {}},
+            },
         }
 
         result = generate_inputs_variable(output_schemas)
 
         # Check that both schemas are included
-        assert 'database = object({' in result
-        assert 'cache = object({' in result
+        assert "database = object({" in result
+        assert "cache = object({" in result
