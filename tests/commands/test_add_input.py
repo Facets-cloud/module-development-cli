@@ -140,9 +140,7 @@ variable "environment" {
         """Test successfully adding an input."""
         with patch(
             "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
-        ), patch("requests.get") as mock_requests, patch(
-            "ftf_cli.utils.ensure_formatting_for_object"
-        ):
+        ), patch("requests.get") as mock_requests:
 
             # Setup API response
             mock_response = MagicMock()
@@ -285,9 +283,7 @@ variable "environment" {
 
         with patch(
             "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
-        ), patch("requests.get") as mock_requests, patch(
-            "ftf_cli.utils.ensure_formatting_for_object"
-        ):
+        ), patch("requests.get") as mock_requests:
             # Setup API response
             mock_response = MagicMock()
             mock_response.json.return_value = malformed_api_response
@@ -327,9 +323,7 @@ variable "environment" {
 
         with patch(
             "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
-        ), patch("requests.get") as mock_requests, patch(
-            "ftf_cli.utils.ensure_formatting_for_object"
-        ):
+        ), patch("requests.get") as mock_requests:
             # Setup API response
             mock_response = MagicMock()
             mock_response.json.return_value = no_properties_response
