@@ -1,5 +1,6 @@
 import os
 import re
+import traceback
 from subprocess import run
 
 import click
@@ -186,8 +187,9 @@ def add_input(path, profile, name, display_name, description, output_type):
 
         click.echo(f"✅ Input added to the {facets_yaml}.")
 
-    except Exception as e:
-        raise click.UsageError(f"❌ Error encountered while adding input: {e}")
+    except Exception:
+        traceback.print_exc()
+        raise click.UsageError(f"❌ Error encountered while adding input {name}")
 
 
 def generate_inputs_variable(output_schemas):
