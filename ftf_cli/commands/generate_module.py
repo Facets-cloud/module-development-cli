@@ -75,6 +75,6 @@ def generate_module(path, intent, flavor, cloud, title, description, version):
         file_name = template_name.replace(
             ".j2", ""
         )  # Remove .j2 to get the real file name
-        with open(os.path.join(module_path, file_name), "w", encoding='utf-8') as f:
+        with open(os.path.join(module_path, file_name), "w", encoding="utf-8") as f:
             f.write(rendered_content)
     click.echo(f"✅ Module generated at: {module_path}")

@@ -4,7 +4,11 @@ import requests
 import yaml
 import json
 from requests import JSONDecodeError
-from ftf_cli.utils import is_logged_in, get_profile_with_priority, properties_to_lookup_tree
+from ftf_cli.utils import (
+    is_logged_in,
+    get_profile_with_priority,
+    properties_to_lookup_tree,
+)
 
 
 @click.command()
@@ -82,7 +86,9 @@ def register_output_type(yaml_path, profile, inferred_from_module):
             lookup_tree_json = json.dumps(lookup_tree)
             click.echo(f"✅ Generated lookup tree from properties")
         except ValueError as e:
-            raise click.UsageError(f"❌ Error generating lookup tree from properties: {e}")
+            raise click.UsageError(
+                f"❌ Error generating lookup tree from properties: {e}"
+            )
         except Exception as e:
             raise click.UsageError(f"❌ Unexpected error generating lookup tree: {e}")
 

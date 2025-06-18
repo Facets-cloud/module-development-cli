@@ -64,6 +64,7 @@ def test_unexpected_type():
 
 # Tests for generate_output_lookup_tree
 
+
 def test_lookup_tree_dict_input():
     """Test generate_output_lookup_tree with a dictionary input."""
     input_data = {
@@ -202,16 +203,10 @@ class TestPropertiesToLookupTree:
             "properties": {
                 "name": {"type": "string"},
                 "age": {"type": "number"},
-                "active": {"type": "boolean"}
-            }
+                "active": {"type": "boolean"},
+            },
         }
-        expected = {
-            "out": {
-                "name": {},
-                "age": {},
-                "active": {}
-            }
-        }
+        expected = {"out": {"name": {}, "age": {}, "active": {}}}
         assert properties_to_lookup_tree(properties) == expected
 
     def test_nested_object_properties(self):
@@ -226,32 +221,25 @@ class TestPropertiesToLookupTree:
                             "type": "object",
                             "properties": {
                                 "name": {"type": "string"},
-                                "email": {"type": "string"}
-                            }
+                                "email": {"type": "string"},
+                            },
                         },
                         "settings": {
                             "type": "object",
-                            "properties": {
-                                "theme": {"type": "string"}
-                            }
-                        }
-                    }
+                            "properties": {"theme": {"type": "string"}},
+                        },
+                    },
                 },
-                "metadata": {"type": "string"}
-            }
+                "metadata": {"type": "string"},
+            },
         }
         expected = {
             "out": {
                 "user": {
-                    "profile": {
-                        "name": {},
-                        "email": {}
-                    },
-                    "settings": {
-                        "theme": {}
-                    }
+                    "profile": {"name": {}, "email": {}},
+                    "settings": {"theme": {}},
                 },
-                "metadata": {}
+                "metadata": {},
             }
         }
         assert properties_to_lookup_tree(properties) == expected
@@ -261,27 +249,17 @@ class TestPropertiesToLookupTree:
         properties = {
             "type": "object",
             "properties": {
-                "tags": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                },
+                "tags": {"type": "array", "items": {"type": "string"}},
                 "users": {
                     "type": "array",
                     "items": {
                         "type": "object",
-                        "properties": {
-                            "name": {"type": "string"}
-                        }
-                    }
-                }
-            }
+                        "properties": {"name": {"type": "string"}},
+                    },
+                },
+            },
         }
-        expected = {
-            "out": {
-                "tags": {},
-                "users": {}
-            }
-        }
+        expected = {"out": {"tags": {}, "users": {}}}
         assert properties_to_lookup_tree(properties) == expected
 
     def test_mixed_types(self):
@@ -297,34 +275,24 @@ class TestPropertiesToLookupTree:
                             "properties": {
                                 "host": {"type": "string"},
                                 "port": {"type": "number"},
-                                "enabled": {"type": "boolean"}
-                            }
+                                "enabled": {"type": "boolean"},
+                            },
                         },
-                        "cache_servers": {
-                            "type": "array",
-                            "items": {"type": "string"}
-                        }
-                    }
+                        "cache_servers": {"type": "array", "items": {"type": "string"}},
+                    },
                 },
                 "version": {"type": "string"},
-                "features": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                }
-            }
+                "features": {"type": "array", "items": {"type": "string"}},
+            },
         }
         expected = {
             "out": {
                 "config": {
-                    "database": {
-                        "host": {},
-                        "port": {},
-                        "enabled": {}
-                    },
-                    "cache_servers": {}
+                    "database": {"host": {}, "port": {}, "enabled": {}},
+                    "cache_servers": {},
                 },
                 "version": {},
-                "features": {}
+                "features": {},
             }
         }
         assert properties_to_lookup_tree(properties) == expected
@@ -339,8 +307,8 @@ class TestPropertiesToLookupTree:
                     "properties": {
                         "cluster_name": {"type": "string"},
                         "version": {"type": "string"},
-                        "endpoint": {"type": "string"}
-                    }
+                        "endpoint": {"type": "string"},
+                    },
                 },
                 "interfaces": {
                     "type": "object",
@@ -351,8 +319,8 @@ class TestPropertiesToLookupTree:
                                 "username": {"type": "string"},
                                 "password": {"type": "string"},
                                 "host": {"type": "string"},
-                                "port": {"type": "number"}
-                            }
+                                "port": {"type": "number"},
+                            },
                         },
                         "writer": {
                             "type": "object",
@@ -360,44 +328,27 @@ class TestPropertiesToLookupTree:
                                 "username": {"type": "string"},
                                 "password": {"type": "string"},
                                 "host": {"type": "string"},
-                                "port": {"type": "number"}
-                            }
-                        }
-                    }
-                }
-            }
+                                "port": {"type": "number"},
+                            },
+                        },
+                    },
+                },
+            },
         }
         expected = {
             "out": {
-                "attributes": {
-                    "cluster_name": {},
-                    "version": {},
-                    "endpoint": {}
-                },
+                "attributes": {"cluster_name": {}, "version": {}, "endpoint": {}},
                 "interfaces": {
-                    "reader": {
-                        "username": {},
-                        "password": {},
-                        "host": {},
-                        "port": {}
-                    },
-                    "writer": {
-                        "username": {},
-                        "password": {},
-                        "host": {},
-                        "port": {}
-                    }
-                }
+                    "reader": {"username": {}, "password": {}, "host": {}, "port": {}},
+                    "writer": {"username": {}, "password": {}, "host": {}, "port": {}},
+                },
             }
         }
         assert properties_to_lookup_tree(properties) == expected
 
     def test_empty_object(self):
         """Test with empty object properties."""
-        properties = {
-            "type": "object",
-            "properties": {}
-        }
+        properties = {"type": "object", "properties": {}}
         expected = {"out": {}}
         assert properties_to_lookup_tree(properties) == expected
 
@@ -420,12 +371,7 @@ class TestPropertiesToLookupTree:
 
     def test_invalid_nested_schema(self):
         """Test with invalid nested schema object."""
-        properties = {
-            "type": "object",
-            "properties": {
-                "invalid_field": "not_a_dict"
-            }
-        }
+        properties = {"type": "object", "properties": {"invalid_field": "not_a_dict"}}
         with pytest.raises(ValueError, match="Schema object must be a dictionary"):
             properties_to_lookup_tree(properties)
 
@@ -440,8 +386,8 @@ class TestTransformPropertiesToTerraform:
             "properties": {
                 "name": {"type": "string"},
                 "age": {"type": "number"},
-                "active": {"type": "boolean"}
-            }
+                "active": {"type": "boolean"},
+            },
         }
         result = transform_properties_to_terraform(properties)
 
@@ -463,10 +409,10 @@ class TestTransformPropertiesToTerraform:
                     "type": "object",
                     "properties": {
                         "host": {"type": "string"},
-                        "port": {"type": "number"}
-                    }
+                        "port": {"type": "number"},
+                    },
                 }
-            }
+            },
         }
         result = transform_properties_to_terraform(properties)
 
@@ -480,18 +426,10 @@ class TestTransformPropertiesToTerraform:
         properties = {
             "type": "object",
             "properties": {
-                "tags": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                },
-                "counts": {
-                    "type": "array",
-                    "items": {"type": "number"}
-                },
-                "simple_array": {
-                    "type": "array"
-                }
-            }
+                "tags": {"type": "array", "items": {"type": "string"}},
+                "counts": {"type": "array", "items": {"type": "number"}},
+                "simple_array": {"type": "array"},
+            },
         }
         result = transform_properties_to_terraform(properties)
 
@@ -529,19 +467,17 @@ class TestTransformPropertiesToTerraform:
                     "properties": {
                         "level2": {
                             "type": "object",
-                            "properties": {
-                                "field": {"type": "string"}
-                            }
+                            "properties": {"field": {"type": "string"}},
                         }
-                    }
+                    },
                 }
-            }
+            },
         }
         result = transform_properties_to_terraform(properties, level=1)
 
         # Check indentation patterns (should have proper spacing)
-        lines = result.split('\n')
+        lines = result.split("\n")
         # Should have different indentation levels
-        assert any('  level1 = object({' in line for line in lines)
-        assert any('    level2 = object({' in line for line in lines)
-        assert any('      field = string' in line for line in lines)
+        assert any("  level1 = object({" in line for line in lines)
+        assert any("    level2 = object({" in line for line in lines)
+        assert any("      field = string" in line for line in lines)
