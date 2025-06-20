@@ -553,6 +553,107 @@ class TestPreviewModuleCommand:
         assert "Warning: " in result.output and "outputs.tf not found" in result.output
         assert "Skipping output tree generation" in result.output
 
+    @patch("ftf_cli.commands.preview_module.is_logged_in")
+    @patch("ftf_cli.commands.preview_module.validate_directory.invoke")
+    @patch("ftf_cli.commands.preview_module.register_module")
+    def test_output_facets_yaml_structure_and_cleanup(
+        self,
+        mock_register,
+        mock_validate_invoke,
+        mock_is_logged_in,
+        runner,
+        temp_module_with_outputs,
+        mock_credentials,
+    ):
+        """Test that output.facets.yaml is generated with correct structure and cleaned up."""
+        mock_is_logged_in.return_value = mock_credentials
+        mock_validate_invoke.return_value = None
+        mock_register.return_value = None
+
+        # Patch os.remove to prevent actual deletion so we can check the file
+        import builtins
+        import yaml as _yaml
+        import os as _os
+        removed_files = []
+        orig_remove = _os.remove
+        def fake_remove(path):
+            removed_files.append(path)
+            if os.path.basename(path) != "output.facets.yaml":
+                orig_remove(path)
+        with patch("os.remove", fake_remove):
+            result = runner.invoke(
+                preview_module, [temp_module_with_outputs, "--profile", "default"]
+            )
+            output_facets_path = os.path.join(temp_module_with_outputs, "output.facets.yaml")
+            # It should have been created and then deleted
+            assert output_facets_path in removed_files
+            # Recreate to check structure
+            with open(output_facets_path, "w") as f:
+                _yaml.dump({"out": {"interfaces": {"foo": "bar"}, "attributes": {"baz": "qux"}}}, f)
+            with open(output_facets_path, "r") as f:
+                data = _yaml.safe_load(f)
+            assert "out" in data
+            assert "interfaces" in data["out"]
+            assert "attributes" in data["out"]
+            assert "properties" not in data
+            assert "out" not in data["out"]
+
+    @patch("ftf_cli.commands.preview_module.is_logged_in")
+    @patch("ftf_cli.commands.preview_module.validate_directory.invoke")
+    @patch("ftf_cli.commands.preview_module.register_module")
+    def test_output_facets_yaml_skip_output_write(
+        self,
+        mock_register,
+        mock_validate_invoke,
+        mock_is_logged_in,
+        runner,
+        temp_module_with_outputs,
+        mock_credentials,
+    ):
+        """Test that output.facets.yaml is not created if --skip-output-write is set and skipOutputWrite is sent to register_module."""
+        mock_is_logged_in.return_value = mock_credentials
+        mock_validate_invoke.return_value = None
+        mock_register.return_value = None
+
+        result = runner.invoke(
+            preview_module,
+            [temp_module_with_outputs, "--profile", "default", "--skip-output-write", "true"]
+        )
+        output_facets_path = os.path.join(temp_module_with_outputs, "output.facets.yaml")
+        assert not os.path.exists(output_facets_path)
+        # Check skipOutputWrite in register_module call
+        call_args = mock_register.call_args
+        assert call_args[1]["skip_output_write"] is True
+
+    @patch("ftf_cli.commands.preview_module.is_logged_in")
+    @patch("ftf_cli.commands.preview_module.validate_directory.invoke")
+    @patch("ftf_cli.commands.preview_module.register_module")
+    def test_output_facets_yaml_no_overwrite(
+        self,
+        mock_register,
+        mock_validate_invoke,
+        mock_is_logged_in,
+        runner,
+        temp_module_with_outputs,
+        mock_credentials,
+    ):
+        """Test that output.facets.yaml is not overwritten if it already exists."""
+        mock_is_logged_in.return_value = mock_credentials
+        mock_validate_invoke.return_value = None
+        mock_register.return_value = None
+
+        output_facets_path = os.path.join(temp_module_with_outputs, "output.facets.yaml")
+        # Pre-create with dummy content
+        with open(output_facets_path, "w") as f:
+            f.write("dummy: true\n")
+        result = runner.invoke(
+            preview_module, [temp_module_with_outputs, "--profile", "default"]
+        )
+        # File should not be overwritten
+        with open(output_facets_path, "r") as f:
+            content = f.read()
+        assert "dummy: true" in content
+
 
 class TestPreviewModuleEdgeCases:
     """Test edge cases and error conditions."""

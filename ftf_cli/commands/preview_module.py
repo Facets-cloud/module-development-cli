@@ -13,6 +13,7 @@ import getpass
 import yaml
 import hcl2
 import json
+import hcl
 
 
 @click.command()
@@ -61,6 +62,13 @@ import json
     callback=validate_boolean,
     help="Skip Terraform validation steps if set to true.",
 )
+@click.option(
+    "--skip-output-write",
+    default=False,
+    callback=validate_boolean,
+    is_flag=False,
+    help="Skip writing output.facets.yaml file and send skipOutputWrite in module metadata.",
+)
 def preview_module(
     path,
     profile,
@@ -70,47 +78,49 @@ def preview_module(
     git_ref,
     publish,
     skip_terraform_validation,
+    skip_output_write,
 ):
     """Register a module at the specified path using the given or default profile."""
 
-    def generate_and_write_output_tree(path):
+    def parse_outputs_tf(path):
         output_file = os.path.join(path, "outputs.tf")
-        output_json_path = os.path.join(path, "output-lookup-tree.json")
-
-        # Check if outputs.tf exists
         if not os.path.exists(output_file):
-            click.echo(
-                f"Warning: {output_file} not found. Skipping output tree generation."
-            )
             return None
+        with open(output_file, "r") as file:
+            parsed = hcl2.load(file)
+        return parsed
 
-        try:
-            with open(output_file, "r") as file:
-                dict = hcl2.load(file)
+    def extract_output_structures(parsed_outputs):
+        locals_ = parsed_outputs.get("locals", [{}])[0]
+        output_interfaces = locals_.get("output_interfaces", [{}])[0]
+        output_attributes = locals_.get("output_attributes", [{}])[0]
+        return output_interfaces, output_attributes
 
-            locals = dict.get("locals", [{}])[0]
-            output_interfaces = locals.get("output_interfaces", [{}])[0]
-            output_attributes = locals.get("output_attributes", [{}])[0]
-
-            output = {
-                "out": {
-                    "attributes": output_attributes,
-                    "interfaces": output_interfaces,
-                }
+    def write_output_lookup_tree(path, output_interfaces, output_attributes):
+        output_json_path = os.path.join(path, "output-lookup-tree.json")
+        output = {
+            "out": {
+                "attributes": output_attributes,
+                "interfaces": output_interfaces,
             }
+        }
+        transformed_output = generate_output_lookup_tree(output)
+        with open(output_json_path, "w") as file:
+            json.dump(transformed_output, file, indent=4)
+        return output_json_path
 
-            transformed_output = generate_output_lookup_tree(output)
-
-            # Save the transformed output to output-lookup-tree.json
-            with open(output_json_path, "w") as file:
-                json.dump(transformed_output, file, indent=4)
-
-            click.echo(f"Output lookup tree saved to {output_json_path}")
-            return output_json_path
-
-        except Exception as e:
-            click.echo(f"Error processing {output_file}: {e}")
-            return None
+    def write_output_facets_yaml(path, output_interfaces, output_attributes):
+        output_facets_file = os.path.join(path, "output.facets.yaml")
+        from ftf_cli.utils import generate_output_tree
+        interfaces_schema = generate_output_tree(output_interfaces)
+        attributes_schema = generate_output_tree(output_attributes)
+        out_schema = {
+            "interfaces": interfaces_schema,
+            "attributes": attributes_schema,
+        }
+        with open(output_facets_file, "w") as f:
+            yaml.dump({"out": out_schema}, f, sort_keys=False)
+        return output_facets_file
 
     click.echo(f"Profile selected: {profile}")
 
@@ -181,9 +191,36 @@ def preview_module(
     success_message = f'[PREVIEW] Module with Intent "{intent}", Flavor "{flavor}", and Version "{facets_data["version"]}" successfully previewed to {control_plane_url}'
 
     output_json_path = None
+    output_facets_path = None
+    parsed_outputs = parse_outputs_tf(path)
+    output_interfaces = None
+    output_attributes = None
+    if parsed_outputs:
+        output_interfaces, output_attributes = extract_output_structures(parsed_outputs)
     try:
-        # Generate the output tree and get the path to the generated file
-        output_json_path = generate_and_write_output_tree(path)
+        # Generate the output lookup tree if outputs.tf exists
+        if output_interfaces is not None and output_attributes is not None:
+            try:
+                output_json_path = write_output_lookup_tree(path, output_interfaces, output_attributes)
+                click.echo(f"Output lookup tree saved to {output_json_path}")
+            except Exception as e:
+                click.echo(f"Error generating output lookup tree: {e}")
+        else:
+            output_json_path = None
+            if parse_outputs_tf(path) is None:
+                click.echo(f"Warning: {os.path.join(path, 'outputs.tf')} not found. Skipping output tree generation.")
+
+        # Generate output.facets.yaml if needed
+        output_facets_file = os.path.join(path, "output.facets.yaml")
+        if not skip_output_write and output_interfaces is not None and output_attributes is not None:
+            if not os.path.exists(output_facets_file):
+                try:
+                    output_facets_path = write_output_facets_yaml(path, output_interfaces, output_attributes)
+                    click.echo(f"output.facets.yaml saved to {output_facets_path}")
+                except Exception as e:
+                    click.echo(f"Error generating output.facets.yaml: {e}")
+            else:
+                click.echo(f"output.facets.yaml already exists, skipping generation.")
 
         # Register the module
         register_module(
@@ -195,6 +232,7 @@ def preview_module(
             git_ref=git_ref,
             is_feature_branch=(not publishable and not publish),
             auto_create=auto_create_intent,
+            skip_output_write=skip_output_write,
         )
 
         click.echo("✔ Module preview successfully registered.")
@@ -221,6 +259,13 @@ def preview_module(
                 click.echo(
                     f"Warning: Failed to remove temporary file {output_json_path}: {e}"
                 )
+        # Remove output.facets.yaml if it was generated
+        if output_facets_path and os.path.exists(output_facets_path):
+            try:
+                os.remove(output_facets_path)
+                click.echo(f"Removed temporary file: {output_facets_path}")
+            except Exception as e:
+                click.echo(f"Warning: Failed to remove temporary file {output_facets_path}: {e}")
 
     success_message_published = f'[PUBLISH] Module with Intent "{intent}", Flavor "{flavor}", and Version "{facets_data["version"]}" successfully published to {control_plane_url}'
 

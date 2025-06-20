@@ -6,6 +6,7 @@ import base64
 from typing import Dict, Optional, Tuple
 import requests
 import click
+import io
 
 
 class ModuleOperationError(Exception):
@@ -66,6 +67,7 @@ def register_module(
         git_ref: Optional[str] = None,
         is_feature_branch: bool = False,
         auto_create: bool = False,
+        skip_output_write: bool = False,
 ) -> None:
     """Register a module with the control plane"""
 
@@ -107,8 +109,8 @@ def register_module(
         with open(zip_path, "rb") as zip_file:
             files = {"file": ("module.zip", zip_file, "application/zip")}
 
-            # Prepare metadata if git info is provided
-            if any([git_url, git_ref, is_feature_branch, auto_create]):
+            # Prepare metadata if git info is provided or skip_output_write is set
+            if any([git_url, git_ref, is_feature_branch, auto_create, skip_output_write]):
                 metadata = {}
                 if git_url:
                     metadata["gitUrl"] = git_url
@@ -116,15 +118,25 @@ def register_module(
                     metadata["gitRef"] = git_ref
                 metadata["featureBranch"] = is_feature_branch
                 metadata["autoCreate"] = auto_create
+                metadata["skipOutputWrite"] = skip_output_write
 
+                metadata_json = json.dumps(metadata).encode()
+                temp_metadata_fd, temp_metadata_path = tempfile.mkstemp(suffix=".json")
+                with os.fdopen(temp_metadata_fd, "wb") as temp_metadata_file:
+                    temp_metadata_file.write(metadata_json)
+                metadata_file = open(temp_metadata_path, "rb")
                 files["metadata"] = (
                     "metadata.json",
-                    json.dumps(metadata),
+                    metadata_file,
                     "application/json",
                 )
 
             # Make the request
             response = requests.post(upload_url, headers=headers, files=files)
+
+            if 'metadata' in files:
+                metadata_file.close()
+                os.remove(temp_metadata_path)
 
         # Check response
         if response.status_code == 200:
