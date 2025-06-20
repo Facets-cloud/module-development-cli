@@ -1,18 +1,18 @@
 import os
 import click
+import getpass
+import yaml
+import hcl2
+import json
 from ftf_cli.utils import (
     is_logged_in,
     validate_boolean,
     generate_output_lookup_tree,
     get_profile_with_priority,
+    generate_output_tree,
 )
 from ftf_cli.commands.validate_directory import validate_directory
 from ftf_cli.operations import register_module, publish_module, ModuleOperationError
-
-import getpass
-import yaml
-import hcl2
-import json
 
 
 @click.command()
@@ -85,7 +85,7 @@ def preview_module(
         output_file = os.path.join(path, "outputs.tf")
         if not os.path.exists(output_file):
             return None
-        with open(output_file, "r") as file:
+        with open(output_file, "r", encoding="utf-8") as file:
             parsed = hcl2.load(file)
         return parsed
 
@@ -104,20 +104,19 @@ def preview_module(
             }
         }
         transformed_output = generate_output_lookup_tree(output)
-        with open(output_json_path, "w") as file:
+        with open(output_json_path, "w", encoding="utf-8") as file:
             json.dump(transformed_output, file, indent=4)
         return output_json_path
 
     def write_output_facets_yaml(path, output_interfaces, output_attributes):
         output_facets_file = os.path.join(path, "output.facets.yaml")
-        from ftf_cli.utils import generate_output_tree
         interfaces_schema = generate_output_tree(output_interfaces)
         attributes_schema = generate_output_tree(output_attributes)
         out_schema = {
             "interfaces": interfaces_schema,
             "attributes": attributes_schema,
         }
-        with open(output_facets_file, "w") as f:
+        with open(output_facets_file, "w", encoding="utf-8") as f:
             yaml.dump({"out": out_schema}, f, sort_keys=False)
         return output_facets_file
 
@@ -149,7 +148,7 @@ def preview_module(
 
     # Load facets.yaml and modify if necessary
     yaml_file = os.path.join(path, "facets.yaml")
-    with open(yaml_file, "r") as file:
+    with open(yaml_file, "r", encoding="utf-8") as file:
         facets_data = yaml.safe_load(file)
 
     original_version = facets_data.get("version", "1.0")
@@ -167,11 +166,11 @@ def preview_module(
         click.echo(f"Sample version modified to: {new_sample_version}")
 
         # Write modified version back to facets.yaml
-        with open(yaml_file, "w") as file:
+        with open(yaml_file, "w", encoding="utf-8") as file:
             yaml.dump(facets_data, file, sort_keys=False)
 
     # Write the updated facets.yaml with validated files
-    with open(yaml_file, "w") as file:
+    with open(yaml_file, "w", encoding="utf-8") as file:
         yaml.dump(facets_data, file, sort_keys=False)
 
     control_plane_url = credentials["control_plane_url"]
@@ -244,7 +243,7 @@ def preview_module(
         if is_local_develop:
             facets_data["version"] = original_version
             facets_data["sample"]["version"] = original_sample_version
-            with open(yaml_file, "w") as file:
+            with open(yaml_file, "w", encoding="utf-8") as file:
                 yaml.dump(facets_data, file, sort_keys=False)
             click.echo(f"Version reverted to: {original_version}")
             click.echo(f"Sample version reverted to: {original_sample_version}")
