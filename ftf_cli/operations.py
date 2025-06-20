@@ -6,7 +6,6 @@ import base64
 from typing import Dict, Optional, Tuple
 import requests
 import click
-import io
 
 
 class ModuleOperationError(Exception):

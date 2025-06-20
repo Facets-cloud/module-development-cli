@@ -219,7 +219,7 @@ def preview_module(
                 except Exception as e:
                     click.echo(f"Error generating output.facets.yaml: {e}")
             else:
-                click.echo(f"output.facets.yaml already exists, skipping generation.")
+                click.echo("output.facets.yaml already exists, skipping generation.")
 
         # Register the module
         register_module(
