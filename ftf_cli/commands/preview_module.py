@@ -90,9 +90,26 @@ def preview_module(
         return parsed
 
     def extract_output_structures(parsed_outputs):
-        locals_ = parsed_outputs.get("locals", [{}])[0]
-        output_interfaces = locals_.get("output_interfaces", [{}])[0]
-        output_attributes = locals_.get("output_attributes", [{}])[0]
+        locals_list = parsed_outputs.get("locals")
+        if isinstance(locals_list, list) and locals_list:
+            locals_ = locals_list[0]
+        elif isinstance(locals_list, dict):
+            locals_ = locals_list
+        else:
+            locals_ = {}
+
+        output_interfaces = locals_.get("output_interfaces", {})
+        if isinstance(output_interfaces, list) and output_interfaces:
+            output_interfaces = output_interfaces[0]
+        elif not isinstance(output_interfaces, dict):
+            output_interfaces = {}
+
+        output_attributes = locals_.get("output_attributes", {})
+        if isinstance(output_attributes, list) and output_attributes:
+            output_attributes = output_attributes[0]
+        elif not isinstance(output_attributes, dict):
+            output_attributes = {}
+
         return output_interfaces, output_attributes
 
     def write_output_lookup_tree(path, output_interfaces, output_attributes):
