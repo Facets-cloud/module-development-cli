@@ -66,7 +66,7 @@ from ftf_cli.operations import register_module, publish_module, ModuleOperationE
     default=False,
     callback=validate_boolean,
     is_flag=False,
-    help="Skip writing output.facets.yaml file and send skipOutputWrite in module metadata.",
+    help="Do not update the output type in facets. Set to true only if you have already registered the output type before calling this command.",
 )
 def preview_module(
     path,
