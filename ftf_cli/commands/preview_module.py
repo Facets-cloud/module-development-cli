@@ -13,7 +13,6 @@ import getpass
 import yaml
 import hcl2
 import json
-import hcl
 
 
 @click.command()

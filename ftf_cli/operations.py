@@ -124,19 +124,20 @@ def register_module(
                 temp_metadata_fd, temp_metadata_path = tempfile.mkstemp(suffix=".json")
                 with os.fdopen(temp_metadata_fd, "wb") as temp_metadata_file:
                     temp_metadata_file.write(metadata_json)
-                metadata_file = open(temp_metadata_path, "rb")
-                files["metadata"] = (
-                    "metadata.json",
-                    metadata_file,
-                    "application/json",
-                )
-
-            # Make the request
-            response = requests.post(upload_url, headers=headers, files=files)
-
-            if 'metadata' in files:
-                metadata_file.close()
-                os.remove(temp_metadata_path)
+                try:
+                    with open(temp_metadata_path, "rb") as metadata_file:
+                        files["metadata"] = (
+                            "metadata.json",
+                            metadata_file,
+                            "application/json",
+                        )
+                        # Make the request
+                        response = requests.post(upload_url, headers=headers, files=files)
+                finally:
+                    os.remove(temp_metadata_path)
+            else:
+                # Make the request
+                response = requests.post(upload_url, headers=headers, files=files)
 
         # Check response
         if response.status_code == 200:
