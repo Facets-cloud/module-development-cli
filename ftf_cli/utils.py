@@ -18,6 +18,27 @@ ALLOWED_TYPES = ["string", "number", "boolean", "enum"]
 REQUIRED_TF_FACETS_VARS = ["instance", "instance_name", "environment", "inputs"]
 
 
+def parse_namespace_and_name(output_type):
+    """Parse output_type into namespace and name components.
+    
+    Args:
+        output_type (str): Format should be @namespace/name
+        
+    Returns:
+        tuple: (namespace, name)
+        
+    Raises:
+        click.UsageError: If format is invalid
+    """
+    pattern = r"(@[^/]+)/(.*)"
+    match = re.match(pattern, output_type)
+    if not match:
+        raise click.UsageError(
+            f"❌ Invalid format '{output_type}'. Expected format: @namespace/name (e.g., @outputs/vpc, @custom/sqs)"
+        )
+    return match.group(1), match.group(2)
+
+
 def validate_facets_yaml(path, filename="facets.yaml"):
     """Validate the existence and format of specified facets yaml file in the given path."""
     yaml_path = os.path.join(path, filename)
@@ -843,7 +864,7 @@ def transform_properties_to_terraform(properties_obj, level=1):
     Transform JSON Schema properties directly to Terraform-compatible schema.
 
     Args:
-        properties_obj: JSON Schema properties object
+        properties_obj: JSON Schema properties object or direct properties dict
         level: Current indentation level
 
     Returns:
@@ -856,10 +877,28 @@ def transform_properties_to_terraform(properties_obj, level=1):
     if not isinstance(properties_obj, dict):
         return "any"
 
-    # Handle object with properties
+    # Handle JSON Schema object with type and properties
     if properties_obj.get("type") == "object" and "properties" in properties_obj:
         transformed_items = []
         for key, value in properties_obj["properties"].items():
+            transformed_value = transform_properties_to_terraform(value, level + 1)
+            transformed_items.append(f"{next_indent}{key} = {transformed_value}")
+
+        # Join the transformed items with a comma and newline
+        joined_items = ",\n".join(transformed_items)
+
+        # Construct the object block with proper indentation
+        object_block = f"object({{\n{joined_items}\n{current_indent}}})"
+        return object_block
+
+    # Handle direct properties object (new case for @custom/sqs type data)
+    elif "type" not in properties_obj and all(isinstance(v, dict) and "type" in v for v in properties_obj.values() if v):
+        # This is a direct properties object like {"queue_arn": {"type": "string"}, ...}
+        if not properties_obj:  # Empty object
+            return "object({})"
+            
+        transformed_items = []
+        for key, value in properties_obj.items():
             transformed_value = transform_properties_to_terraform(value, level + 1)
             transformed_items.append(f"{next_indent}{key} = {transformed_value}")
 
@@ -885,5 +924,7 @@ def transform_properties_to_terraform(properties_obj, level=1):
     elif properties_obj.get("type") == "boolean":
         return "bool"
     else:
-        # Fallback for unknown types
+        # Fallback for unknown types or empty objects
+        if not properties_obj:
+            return "object({})"
         return "any"
