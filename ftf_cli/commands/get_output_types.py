@@ -5,7 +5,7 @@ import requests
 from ftf_cli.utils import is_logged_in, get_profile_with_priority
 
 
-@click.command()  # Add this decorator to register the function as a Click command
+@click.command()
 @click.option(
     "-p",
     "--profile",
@@ -36,7 +36,9 @@ def get_output_types(profile):
         if response.status_code == 200:
             registered_output_types = []
             for output_type in response.json():
-                registered_output_types.append(output_type["name"])
+                namespace = output_type.get("namespace", "@outputs")  # Default fallback
+                name = output_type["name"]
+                registered_output_types.append(f"{namespace}/{name}")
             registered_output_types.sort()
             if len(registered_output_types) == 0:
                 click.echo("No output types registered.")

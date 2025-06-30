@@ -7,7 +7,7 @@ from .delete_module import delete_module
 from .login import login
 from .preview_module import preview_module
 from .get_output_types import get_output_types
-from .get_output_details import get_output_lookup_tree
+from .get_output_type_details import get_output_type_details
 from .register_output_type import register_output_type
 from .add_import import add_import
 from .get_resources import get_resources
@@ -23,7 +23,7 @@ __all__ = [
     "generate_module",
     "get_output_types",
     "register_output_type",
-    "get_output_lookup_tree",
+    "get_output_type_details",
     "login",
     "preview_module",
     "validate_directory",

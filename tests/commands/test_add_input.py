@@ -61,6 +61,7 @@ variable "environment" {
         return [
             {
                 "name": "database",
+                "namespace": "@outputs",
                 "properties": {
                     "type": "object",
                     "properties": {
@@ -98,6 +99,7 @@ variable "environment" {
             },
             {
                 "name": "cache",
+                "namespace": "@outputs",
                 "properties": {
                     "type": "object",
                     "properties": {
@@ -110,6 +112,18 @@ variable "environment" {
                         },
                         "interfaces": {"type": "object", "properties": {}},
                     },
+                },
+            },
+            {
+                "name": "sqs",
+                "namespace": "@anuj",
+                "properties": {
+                    "attributes": {
+                        "queue_arn": {"type": "string"},
+                        "queue_url": {"type": "string"},
+                        "queue_name": {"type": "string"},
+                    },
+                    "interfaces": {},
                 },
             },
         ]
@@ -158,7 +172,7 @@ variable "environment" {
                     "--description",
                     "Database connection configuration",
                     "--output-type",
-                    "database",
+                    "@outputs/database",
                     "--profile",
                     "test",
                 ],
@@ -203,7 +217,7 @@ variable "environment" {
                     "--description",
                     "Test description",
                     "--output-type",
-                    "database",
+                    "@outputs/database",
                 ],
             )
 
@@ -226,7 +240,7 @@ variable "environment" {
                     "--description",
                     "Test description",
                     "--output-type",
-                    "database",
+                    "@outputs/database",
                 ],
             )
 
@@ -256,7 +270,7 @@ variable "environment" {
                     "--description",
                     "Test description",
                     "--output-type",
-                    "nonexistent",  # This output doesn't exist
+                    "@outputs/nonexistent",  # This output doesn't exist
                     "--profile",
                     "test",
                 ],
@@ -271,6 +285,7 @@ variable "environment" {
         malformed_api_response = [
             {
                 "name": "malformed",
+                "namespace": "@outputs",
                 "properties": {
                     "type": "object",
                     "properties": {
@@ -300,7 +315,7 @@ variable "environment" {
                     "--description",
                     "Test description",
                     "--output-type",
-                    "malformed",
+                    "@outputs/malformed",
                     "--profile",
                     "test",
                 ],
@@ -317,6 +332,7 @@ variable "environment" {
         no_properties_response = [
             {
                 "name": "no_props",
+                "namespace": "@outputs",
                 # Missing properties field entirely
             }
         ]
@@ -340,7 +356,7 @@ variable "environment" {
                     "--description",
                     "Test description",
                     "--output-type",
-                    "no_props",
+                    "@outputs/no_props",
                     "--profile",
                     "test",
                 ],
@@ -402,7 +418,7 @@ variable "environment" {
                         "--description",
                         "Updated description",
                         "--output-type",
-                        "database",
+                        "@outputs/database",
                         "--profile",
                         "test",
                     ],
@@ -433,12 +449,159 @@ variable "environment" {
                     "--description",
                     "Test description",
                     "--output-type",
-                    "database",
+                    "@outputs/database",
                 ],
             )
 
             assert result.exit_code == 2  # Click validation error
             assert "does not exist" in result.output
+
+    def test_invalid_output_type_format(self, runner, temp_dir):
+        """Test error when output type format is invalid."""
+        with patch(
+            "ftf_cli.commands.add_input.is_logged_in",
+            return_value={
+                "control_plane_url": "test",
+                "username": "test",
+                "token": "test",
+            },
+        ):
+            # Test missing @ prefix
+            result = runner.invoke(
+                add_input,
+                [
+                    temp_dir,
+                    "--name",
+                    "test_input",
+                    "--display-name",
+                    "Test Input",
+                    "--description",
+                    "Test description",
+                    "--output-type",
+                    "outputs/database",  # Missing @ prefix
+                ],
+            )
+
+            assert result.exit_code != 0
+            assert "Invalid format" in result.output
+            assert "Expected format: @namespace/name" in result.output
+
+    def test_invalid_output_type_format_missing_slash(self, runner, temp_dir):
+        """Test error when output type format is missing slash."""
+        with patch(
+            "ftf_cli.commands.add_input.is_logged_in",
+            return_value={
+                "control_plane_url": "test",
+                "username": "test",
+                "token": "test",
+            },
+        ):
+            # Test missing slash
+            result = runner.invoke(
+                add_input,
+                [
+                    temp_dir,
+                    "--name",
+                    "test_input",
+                    "--display-name",
+                    "Test Input",
+                    "--description",
+                    "Test description",
+                    "--output-type",
+                    "@outputs_database",  # Missing slash
+                ],
+            )
+
+            assert result.exit_code != 0
+            assert "Invalid format" in result.output
+            assert "Expected format: @namespace/name" in result.output
+
+    def test_custom_namespace_success(
+        self, runner, mock_credentials, temp_dir, sample_api_response
+    ):
+        """Test successfully adding an input with custom namespace."""
+        with patch(
+            "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
+        ), patch("requests.get") as mock_requests:
+
+            # Setup API response
+            mock_response = MagicMock()
+            mock_response.json.return_value = sample_api_response
+            mock_requests.return_value = mock_response
+
+            result = runner.invoke(
+                add_input,
+                [
+                    temp_dir,
+                    "--name",
+                    "queue_connection",
+                    "--display-name",
+                    "Queue Connection",
+                    "--description",
+                    "SQS queue connection configuration",
+                    "--output-type",
+                    "@anuj/sqs",  # Custom namespace
+                    "--profile",
+                    "test",
+                ],
+            )
+
+            # Print output for debugging
+            if result.exit_code != 0:
+                print(f"Exit code: {result.exit_code}")
+                print(f"Output: {result.output}")
+                if result.exception:
+                    print(f"Exception: {result.exception}")
+
+            # Assertions
+            assert result.exit_code == 0
+            assert "✅ Input added to the" in result.output
+
+    def test_direct_properties_structure(self, runner, mock_credentials, temp_dir):
+        """Test handling outputs with direct attributes/interfaces in properties."""
+        # API response with direct structure (like the sqs example)
+        direct_structure_response = [
+            {
+                "name": "sqs",
+                "namespace": "@anuj",
+                "properties": {
+                    "attributes": {
+                        "queue_arn": {"type": "string"},
+                        "queue_url": {"type": "string"},
+                    },
+                    "interfaces": {},
+                },
+            }
+        ]
+
+        with patch(
+            "ftf_cli.commands.add_input.is_logged_in", return_value=mock_credentials
+        ), patch("requests.get") as mock_requests:
+            # Setup API response
+            mock_response = MagicMock()
+            mock_response.json.return_value = direct_structure_response
+            mock_requests.return_value = mock_response
+
+            result = runner.invoke(
+                add_input,
+                [
+                    temp_dir,
+                    "--name",
+                    "test_input",
+                    "--display-name",
+                    "Test Input",
+                    "--description",
+                    "Test description",
+                    "--output-type",
+                    "@anuj/sqs",
+                    "--profile",
+                    "test",
+                ],
+            )
+
+            # Should succeed without warnings
+            assert result.exit_code == 0
+            assert "does not have expected structure" not in result.output
 
 
 class TestGenerateInputsVariable:
