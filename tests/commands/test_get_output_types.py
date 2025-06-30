@@ -35,7 +35,7 @@ class TestGetOutputTypesCommand:
             },
             {
                 "name": "sqs",
-                "namespace": "@anuj",
+                "namespace": "@custom",
                 "properties": {"type": "object"}
             },
         ]
@@ -69,7 +69,7 @@ class TestGetOutputTypesCommand:
             # Assertions
             assert result.exit_code == 0
             assert "Registered output types:" in result.output
-            assert "- @anuj/sqs" in result.output
+            assert "- @custom/sqs" in result.output
             assert "- @outputs/cache" in result.output
             assert "- @outputs/database" in result.output
 

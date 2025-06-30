@@ -1,32 +1,9 @@
 import json
-import os
-import re
 import traceback
 import click
 import requests
 
-from ftf_cli.utils import is_logged_in, get_profile_with_priority
-
-
-def parse_namespace_and_name(output_type):
-    """Parse output_type into namespace and name components.
-    
-    Args:
-        output_type (str): Format should be @namespace/name
-        
-    Returns:
-        tuple: (namespace, name)
-        
-    Raises:
-        click.UsageError: If format is invalid
-    """
-    pattern = r"(@[^/]+)/(.*)"
-    match = re.match(pattern, output_type)
-    if not match:
-        raise click.UsageError(
-            f"❌ Invalid format '{output_type}'. Expected format: @namespace/name (e.g., @outputs/vpc, @anuj/sqs)"
-        )
-    return match.group(1), match.group(2)
+from ftf_cli.utils import is_logged_in, get_profile_with_priority, parse_namespace_and_name
 
 
 @click.command()
@@ -41,7 +18,7 @@ def parse_namespace_and_name(output_type):
     "--output-type",
     prompt="Output type to get details for",
     type=str,
-    help="The output type to get details for. Format: @namespace/name (e.g., @outputs/vpc, @anuj/sqs)",
+    help="The output type to get details for. Format: @namespace/name (e.g., @outputs/vpc, @custom/sqs)",
 )
 def get_output_type_details(profile, output_type):
     """Get the details of a registered output type from the control plane"""
@@ -91,23 +68,23 @@ def get_output_type_details(profile, output_type):
             
             # Display properties if present
             if "properties" in required_output and required_output["properties"]:
-                click.echo(f"\n--- Properties ---")
+                click.echo("\n--- Properties ---")
                 properties = required_output["properties"]
                 click.echo(json.dumps(properties, indent=2, sort_keys=True))
             else:
-                click.echo(f"\n--- Properties ---")
+                click.echo("\n--- Properties ---")
                 click.echo("No properties defined.")
 
             # Display lookup tree if present
             if "lookupTree" in required_output and required_output["lookupTree"]:
-                click.echo(f"\n--- Lookup Tree ---")
+                click.echo("\n--- Lookup Tree ---")
                 try:
                     lookup_tree = json.loads(required_output["lookupTree"])
                     click.echo(json.dumps(lookup_tree, indent=2, sort_keys=True))
                 except json.JSONDecodeError:
                     click.echo("Invalid JSON in lookup tree.")
             else:
-                click.echo(f"\n--- Lookup Tree ---")
+                click.echo("\n--- Lookup Tree ---")
                 lookup_tree = {"out": {"attributes": {}, "interfaces": {}}}
                 click.echo(json.dumps(lookup_tree, indent=2, sort_keys=True))
 

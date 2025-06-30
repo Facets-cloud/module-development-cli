@@ -1,5 +1,4 @@
 import pytest
-import json
 from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 
@@ -51,7 +50,7 @@ class TestGetOutputTypeDetailsCommand:
             },
             {
                 "name": "sqs",
-                "namespace": "@anuj",
+                "namespace": "@custom",
                 "source": "CUSTOM",
                 "inferredFromModule": True,
                 "properties": {
@@ -119,13 +118,13 @@ class TestGetOutputTypeDetailsCommand:
 
             result = runner.invoke(
                 get_output_type_details,
-                ["--output-type", "@anuj/sqs", "--profile", "test"]
+                ["--output-type", "@custom/sqs", "--profile", "test"]
             )
 
             assert result.exit_code == 0
-            assert "=== Output Type Details: @anuj/sqs ===" in result.output
+            assert "=== Output Type Details: @custom/sqs ===" in result.output
             assert "Name: sqs" in result.output
-            assert "Namespace: @anuj" in result.output
+            assert "Namespace: @custom" in result.output
             assert "queue_arn" in result.output
 
     def test_output_not_found(

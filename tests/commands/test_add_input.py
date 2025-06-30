@@ -116,7 +116,7 @@ variable "environment" {
             },
             {
                 "name": "sqs",
-                "namespace": "@anuj",
+                "namespace": "@custom",
                 "properties": {
                     "attributes": {
                         "queue_arn": {"type": "string"},
@@ -540,7 +540,7 @@ variable "environment" {
                     "--description",
                     "SQS queue connection configuration",
                     "--output-type",
-                    "@anuj/sqs",  # Custom namespace
+                    "@custom/sqs",  # Custom namespace
                     "--profile",
                     "test",
                 ],
@@ -563,7 +563,7 @@ variable "environment" {
         direct_structure_response = [
             {
                 "name": "sqs",
-                "namespace": "@anuj",
+                "namespace": "@custom",
                 "properties": {
                     "attributes": {
                         "queue_arn": {"type": "string"},
@@ -593,7 +593,7 @@ variable "environment" {
                     "--description",
                     "Test description",
                     "--output-type",
-                    "@anuj/sqs",
+                    "@custom/sqs",
                     "--profile",
                     "test",
                 ],

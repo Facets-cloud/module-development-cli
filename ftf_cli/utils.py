@@ -18,6 +18,27 @@ ALLOWED_TYPES = ["string", "number", "boolean", "enum"]
 REQUIRED_TF_FACETS_VARS = ["instance", "instance_name", "environment", "inputs"]
 
 
+def parse_namespace_and_name(output_type):
+    """Parse output_type into namespace and name components.
+    
+    Args:
+        output_type (str): Format should be @namespace/name
+        
+    Returns:
+        tuple: (namespace, name)
+        
+    Raises:
+        click.UsageError: If format is invalid
+    """
+    pattern = r"(@[^/]+)/(.*)"
+    match = re.match(pattern, output_type)
+    if not match:
+        raise click.UsageError(
+            f"❌ Invalid format '{output_type}'. Expected format: @namespace/name (e.g., @outputs/vpc, @custom/sqs)"
+        )
+    return match.group(1), match.group(2)
+
+
 def validate_facets_yaml(path, filename="facets.yaml"):
     """Validate the existence and format of specified facets yaml file in the given path."""
     yaml_path = os.path.join(path, filename)
@@ -870,7 +891,7 @@ def transform_properties_to_terraform(properties_obj, level=1):
         object_block = f"object({{\n{joined_items}\n{current_indent}}})"
         return object_block
 
-    # Handle direct properties object (new case for @anuj/sqs type data)
+    # Handle direct properties object (new case for @custom/sqs type data)
     elif "type" not in properties_obj and all(isinstance(v, dict) and "type" in v for v in properties_obj.values() if v):
         # This is a direct properties object like {"queue_arn": {"type": "string"}, ...}
         if not properties_obj:  # Empty object

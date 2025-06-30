@@ -14,28 +14,8 @@ from ftf_cli.utils import (
     transform_properties_to_terraform,
     ensure_formatting_for_object,
     get_profile_with_priority,
+    parse_namespace_and_name,
 )
-
-
-def parse_namespace_and_name(output_type):
-    """Parse output_type into namespace and name components.
-    
-    Args:
-        output_type (str): Format should be @namespace/name
-        
-    Returns:
-        tuple: (namespace, name)
-        
-    Raises:
-        click.UsageError: If format is invalid
-    """
-    pattern = r"(@[^/]+)/(.*)"
-    match = re.match(pattern, output_type)
-    if not match:
-        raise click.UsageError(
-            f"❌ Invalid format '{output_type}'. Expected format: @namespace/name (e.g., @outputs/vpc, @anuj/sqs)"
-        )
-    return match.group(1), match.group(2)
 
 
 @click.command()
@@ -72,7 +52,7 @@ def parse_namespace_and_name(output_type):
     "--output-type",
     prompt="Output Type",
     type=str,
-    help="The type of registered output to be added as input for terraform module. Format: @namespace/name (e.g., @outputs/vpc, @anuj/sqs)",
+    help="The type of registered output to be added as input for terraform module. Format: @namespace/name (e.g., @outputs/vpc, @custom/sqs)",
 )
 def add_input(path, profile, name, display_name, description, output_type):
     """Add an existing registered output as a input in facets.yaml and populate the attributes in variables.tf exposed by selected output."""
