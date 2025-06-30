@@ -14,6 +14,7 @@ from ftf_cli.utils import (
     transform_properties_to_terraform,
     ensure_formatting_for_object,
     get_profile_with_priority,
+    parse_namespace_and_name,
 )
 
 
@@ -51,7 +52,7 @@ from ftf_cli.utils import (
     "--output-type",
     prompt="Output Type",
     type=str,
-    help="The type of registered output to be added as input for terraform module.",
+    help="The type of registered output to be added as input for terraform module. Format: @namespace/name (e.g., @outputs/vpc, @custom/sqs)",
 )
 def add_input(path, profile, name, display_name, description, output_type):
     """Add an existing registered output as a input in facets.yaml and populate the attributes in variables.tf exposed by selected output."""
@@ -76,13 +77,13 @@ def add_input(path, profile, name, display_name, description, output_type):
         required_inputs = facets_data.get("inputs", {})
         required_inputs_map = {}
 
-        pattern = r"@outputs/(.*)"
+        pattern = r"(@[^/]+)/(.*)"
         for key, value in required_inputs.items():
             required_input = value.get("type", "")
             if required_input and required_input != "":
                 match = re.search(pattern, required_input)
                 if match:
-                    required_inputs_map[key] = match.group(1)
+                    required_inputs_map[key] = required_input  # Store full @namespace/name
 
         if name in required_inputs_map:
             click.echo(
@@ -95,7 +96,7 @@ def add_input(path, profile, name, display_name, description, output_type):
         required_inputs.update(
             {
                 name: {
-                    "type": f"@outputs/{output_type}",
+                    "type": output_type,
                     "displayName": display_name,
                     "description": description,
                 }
@@ -104,6 +105,9 @@ def add_input(path, profile, name, display_name, description, output_type):
 
         # update the facets yaml with the new input
         facets_data.update({"inputs": required_inputs})
+
+        # Validate output_type format
+        parse_namespace_and_name(output_type)
 
         # check if profile is set
         click.echo(f"Profile selected: {profile}")
@@ -122,46 +126,55 @@ def add_input(path, profile, name, display_name, description, output_type):
             f"{control_plane_url}/cc-ui/v1/tf-outputs", auth=(username, token)
         )
 
-        registered_outputs = {output["name"]: output for output in response.json()}
-        registered_output_names = list(registered_outputs.keys())
+        registered_outputs = {(output["namespace"], output["name"]): output for output in response.json()}
+        available_output_types = [f'{namespace}/{name}' for namespace, name in registered_outputs.keys()]
 
         # make sure all outputs are registered
-        for output in required_inputs_map.values():
-            if output not in registered_output_names:
+        for output_type_value in required_inputs_map.values():
+            namespace, name = parse_namespace_and_name(output_type_value)
+            if (namespace, name) not in registered_outputs:
                 raise click.UsageError(
-                    f"❌ {output} not found in registered outputs. Please select a valid output type from {registered_output_names}."
+                    f"❌ {output_type_value} not found in registered outputs. Please select a valid output type from {available_output_types}."
                 )
 
         # get properties for each output and transform them
         output_schemas = {}
-        for output_name, output in required_inputs_map.items():
-            properties = registered_outputs[output].get("properties")
+        for output_name, output_type_value in required_inputs_map.items():
+            namespace, name = parse_namespace_and_name(output_type_value)
+            output_data = registered_outputs[(namespace, name)]
+            properties = output_data.get("properties")
 
             if properties:
                 try:
-                    # Assume properties has the expected structure with attributes and interfaces
-                    if (properties.get("type") == "object" and
+                    # Try direct structure first: properties.{attributes, interfaces}
+                    if "attributes" in properties and "interfaces" in properties:
+                        attributes_schema = properties["attributes"]
+                        interfaces_schema = properties["interfaces"]
+                        output_schemas[output_name] = {
+                            "attributes": attributes_schema,
+                            "interfaces": interfaces_schema
+                        }
+                    # Try nested structure: properties.properties.{attributes, interfaces}
+                    elif (properties.get("type") == "object" and
                             "properties" in properties and
                             "attributes" in properties["properties"] and
                             "interfaces" in properties["properties"]):
-
                         attributes_schema = properties["properties"]["attributes"]
                         interfaces_schema = properties["properties"]["interfaces"]
-
                         output_schemas[output_name] = {
                             "attributes": attributes_schema,
                             "interfaces": interfaces_schema
                         }
                     else:
                         click.echo(
-                            f"⚠️ Output {output} does not have expected structure (attributes/interfaces). Using default empty structure.")
+                            f"⚠️ Output {output_type_value} does not have expected structure (attributes/interfaces). Using default empty structure.")
                         output_schemas[output_name] = {"attributes": {}, "interfaces": {}}
 
                 except Exception as e:
-                    click.echo(f"⚠️ Error parsing properties for output {output}: {e}. Using default empty structure.")
+                    click.echo(f"⚠️ Error parsing properties for output {output_type_value}: {e}. Using default empty structure.")
                     output_schemas[output_name] = {"attributes": {}, "interfaces": {}}
             else:
-                click.echo(f"⚠️ Output {output} has no properties defined. Using default empty structure.")
+                click.echo(f"⚠️ Output {output_type_value} has no properties defined. Using default empty structure.")
                 output_schemas[output_name] = {"attributes": {}, "interfaces": {}}
 
         inputs_var = generate_inputs_variable(output_schemas)
