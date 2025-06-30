@@ -2,6 +2,15 @@
 
 FTF CLI is a command-line interface (CLI) tool that facilitates module generation, variable management, validation, and registration in Terraform.
 
+## Key Features
+
+- **Namespace Support**: Output types support both default (`@outputs`) and custom namespaces (e.g., `@anuj/sqs`)
+- **Module Generation**: Scaffold Terraform modules with standardized structure
+- **Variable Management**: Add and manage input variables with type validation
+- **Output Integration**: Wire registered output types as module inputs
+- **Validation**: Comprehensive validation for modules and configurations
+- **Control Plane Integration**: Seamless authentication and interaction with Facets control plane
+
 ## Installation
 
 You can install FTF CLI using pip, pipx, or directly from source.
@@ -170,11 +179,21 @@ ftf add-input [OPTIONS] /path/to/module
 - `-n, --name`: (prompt) Name of the input variable to add in facets.yaml and variables.tf.
 - `-dn, --display-name`: (prompt) Human-readable display name for the input variable.
 - `-d, --description`: (prompt) Description for the input variable.
-- `-o, --output-type`: (prompt) The type of registered output to wire as input.
+- `-o, --output-type`: (prompt) The type of registered output to wire as input. Format: @namespace/name (e.g., @outputs/database, @anuj/sqs).
 
 **Notes**:
 - Updates facets.yaml required inputs and variables.tf accordingly.
 - Facilitates parametrization of modules using control plane outputs.
+- Supports both default (@outputs) and custom namespaces.
+
+**Example**:
+```bash
+ftf add-input /path/to/module \
+  --name queue_connection \
+  --display-name "SQS Queue Connection" \
+  --description "Configuration for SQS queue" \
+  --output-type "@anuj/sqs"
+```
 
 #### Preview (and Publish) Module
 
@@ -279,7 +298,7 @@ ftf delete-module [OPTIONS]
 
 #### Get Output Types
 
-Retrieve the output types registered in the control plane for the authenticated profile.
+Retrieve the output types registered in the control plane for the authenticated profile. Shows both namespace and name for each output type.
 
 ```bash
 ftf get-output-types [OPTIONS]
@@ -288,17 +307,52 @@ ftf get-output-types [OPTIONS]
 **Options**:
 - `-p, --profile`: (prompt) Profile to authenticate as (default: "default").
 
-#### Get Output Lookup Tree
+**Example Output**:
+```
+Registered output types:
+- @anuj/sqs
+- @outputs/cache
+- @outputs/database
+```
 
-Retrieve the detailed lookup tree for a registered output type from the control plane.
+#### Get Output Type Details
+
+Retrieve comprehensive details for a specific registered output type from the control plane, including properties and lookup tree.
 
 ```bash
-ftf get-output-lookup-tree [OPTIONS]
+ftf get-output-type-details [OPTIONS]
 ```
 
 **Options**:
-- `-o, --output`: (prompt) Name of the output type to query.
+- `-o, --output-type`: (prompt) The output type to get details for. Format: @namespace/name (e.g., @outputs/vpc, @anuj/sqs).
 - `-p, --profile`: (prompt) Profile to use for authentication (default: "default").
+
+**Example Output**:
+```
+=== Output Type Details: @anuj/sqs ===
+
+Name: sqs
+Namespace: @anuj
+Source: CUSTOM
+Inferred from Module: true
+
+--- Properties ---
+{
+  "attributes": {
+    "queue_arn": {"type": "string"},
+    "queue_url": {"type": "string"}
+  },
+  "interfaces": {}
+}
+
+--- Lookup Tree ---
+{
+  "out": {
+    "attributes": {"queue_arn": {}, "queue_url": {}},
+    "interfaces": {}
+  }
+}
+```
 
 #### Register Output Type
 
@@ -317,9 +371,21 @@ ftf register-output-type YAML_PATH [OPTIONS]
 
 **Notes**:
 - The YAML file must include `name` and `properties` fields.
-- The name should be in the format `@namespace/name`.
+- The name should be in the format `@namespace/name` (e.g., `@outputs/database`, `@anuj/sqs`).
 - You can include a `providers` section in the YAML to specify provider information.
 - Ensures you're logged in before attempting to register the output type.
+
+**Example YAML**:
+```yaml
+name: "@anuj/sqs"
+properties:
+  attributes:
+    queue_arn:
+      type: string
+    queue_url:
+      type: string
+  interfaces: {}
+```
 
 #### Get Resources
 
