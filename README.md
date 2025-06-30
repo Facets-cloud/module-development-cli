@@ -4,7 +4,6 @@ FTF CLI is a command-line interface (CLI) tool that facilitates module generatio
 
 ## Key Features
 
-- **Namespace Support**: Output types support both default (`@outputs`) and custom namespaces (e.g., `@anuj/sqs`)
 - **Module Generation**: Scaffold Terraform modules with standardized structure
 - **Variable Management**: Add and manage input variables with type validation
 - **Output Integration**: Wire registered output types as module inputs
@@ -179,7 +178,7 @@ ftf add-input [OPTIONS] /path/to/module
 - `-n, --name`: (prompt) Name of the input variable to add in facets.yaml and variables.tf.
 - `-dn, --display-name`: (prompt) Human-readable display name for the input variable.
 - `-d, --description`: (prompt) Description for the input variable.
-- `-o, --output-type`: (prompt) The type of registered output to wire as input. Format: @namespace/name (e.g., @outputs/database, @anuj/sqs).
+- `-o, --output-type`: (prompt) The type of registered output to wire as input. Format: @namespace/name (e.g., @outputs/database, @custom/sqs).
 
 **Notes**:
 - Updates facets.yaml required inputs and variables.tf accordingly.
@@ -192,7 +191,7 @@ ftf add-input /path/to/module \
   --name queue_connection \
   --display-name "SQS Queue Connection" \
   --description "Configuration for SQS queue" \
-  --output-type "@anuj/sqs"
+  --output-type "@custom/sqs"
 ```
 
 #### Preview (and Publish) Module
@@ -310,7 +309,7 @@ ftf get-output-types [OPTIONS]
 **Example Output**:
 ```
 Registered output types:
-- @anuj/sqs
+- @custom/sqs
 - @outputs/cache
 - @outputs/database
 ```
@@ -324,15 +323,15 @@ ftf get-output-type-details [OPTIONS]
 ```
 
 **Options**:
-- `-o, --output-type`: (prompt) The output type to get details for. Format: @namespace/name (e.g., @outputs/vpc, @anuj/sqs).
+- `-o, --output-type`: (prompt) The output type to get details for. Format: @namespace/name (e.g., @outputs/vpc, @custom/sqs).
 - `-p, --profile`: (prompt) Profile to use for authentication (default: "default").
 
 **Example Output**:
 ```
-=== Output Type Details: @anuj/sqs ===
+=== Output Type Details: @custom/sqs ===
 
 Name: sqs
-Namespace: @anuj
+Namespace: @custom
 Source: CUSTOM
 Inferred from Module: true
 
@@ -371,13 +370,13 @@ ftf register-output-type YAML_PATH [OPTIONS]
 
 **Notes**:
 - The YAML file must include `name` and `properties` fields.
-- The name should be in the format `@namespace/name` (e.g., `@outputs/database`, `@anuj/sqs`).
+- The name should be in the format `@namespace/name` (e.g., `@outputs/database`, `@custom/sqs`).
 - You can include a `providers` section in the YAML to specify provider information.
 - Ensures you're logged in before attempting to register the output type.
 
 **Example YAML**:
 ```yaml
-name: "@anuj/sqs"
+name: "@custom/sqs"
 properties:
   attributes:
     queue_arn:
