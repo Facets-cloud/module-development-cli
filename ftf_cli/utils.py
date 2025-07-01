@@ -373,7 +373,7 @@ def check_conflicting_ui_properties(spec_obj, path="spec"):
     Recursively check for conflicting UI properties in spec fields.
 
     Validates that:
-    1. patternProperties and x-ui-yaml-editor: true are not both present on the same field
+    1. patternProperties with object type and x-ui-yaml-editor: true are not both present on the same field
     2. x-ui-override-disable: true and x-ui-overrides-only: true are not both present on the same field
 
     Raises UsageError with clear error message if conflicts are found.
@@ -383,17 +383,22 @@ def check_conflicting_ui_properties(spec_obj, path="spec"):
 
     for key, value in spec_obj.items():
         if isinstance(value, dict):
-            # Check for patternProperties + x-ui-yaml-editor conflict
+            # Check for patternProperties + x-ui-yaml-editor conflict based on pattern type
             has_pattern_properties = "patternProperties" in value
             has_yaml_editor = value.get("x-ui-yaml-editor", False)
 
             if has_pattern_properties and has_yaml_editor:
-                raise click.UsageError(
-                    f"Configuration conflict at {path}.{key}: "
-                    f"Fields cannot have both 'patternProperties' and 'x-ui-yaml-editor: true'. "
-                    f"These properties are mutually exclusive - use either patternProperties for "
-                    f"dynamic key-value structures or x-ui-yaml-editor for free-form YAML editing."
-                )
+                # Check the types of all patternProperties
+                pp = value["patternProperties"]
+                for pattern_key, pp_val in pp.items():
+                    pattern_type = pp_val.get("type")
+                    if pattern_type == "object":
+                        raise click.UsageError(
+                            f"Configuration conflict at {path}.{key}: "
+                            f"Fields with patternProperties of type 'object' cannot have 'x-ui-yaml-editor: true'. "
+                            f"Use either patternProperties with object type for structured dynamic content "
+                            f"or x-ui-yaml-editor for free-form YAML editing."
+                        )
 
             # Check for x-ui-override-disable + x-ui-overrides-only conflict
             has_override_disable = value.get("x-ui-override-disable", False)

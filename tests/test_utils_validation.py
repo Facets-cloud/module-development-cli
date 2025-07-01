@@ -62,14 +62,15 @@ def test_no_conflicting_properties_pass():
         "field2": {"type": "string", "x-ui-yaml-editor": True},
         "field3": {"type": "object", "patternProperties": {"^.*$": {"type": "object"}}},
         "field4": {"type": "string", "x-ui-override-disable": True},
-        "field5": {"type": "string", "x-ui-overrides-only": True}
+        "field5": {"type": "string", "x-ui-overrides-only": True},
+        "field6": {"type": "object", "patternProperties": {"^.*$": {"type": "string"}}, "x-ui-yaml-editor": True}
     }
     # Should pass silently
     check_conflicting_ui_properties(spec)
 
 
-def test_pattern_properties_with_yaml_editor_raises():
-    """Test that patternProperties + x-ui-yaml-editor conflict is detected."""
+def test_pattern_properties_object_type_with_yaml_editor_raises():
+    """Test that patternProperties with object type + x-ui-yaml-editor conflict is detected."""
     spec = {
         "field": {
             "type": "object",
@@ -80,9 +81,8 @@ def test_pattern_properties_with_yaml_editor_raises():
     with pytest.raises(click.UsageError) as excinfo:
         check_conflicting_ui_properties(spec)
     assert "Configuration conflict at spec.field" in str(excinfo.value)
-    assert "patternProperties" in str(excinfo.value)
+    assert "patternProperties of type 'object'" in str(excinfo.value)
     assert "x-ui-yaml-editor: true" in str(excinfo.value)
-    assert "mutually exclusive" in str(excinfo.value)
 
 
 def test_override_disable_with_overrides_only_raises():
@@ -119,6 +119,19 @@ def test_nested_conflicting_properties_raises():
     with pytest.raises(click.UsageError) as excinfo:
         check_conflicting_ui_properties(spec)
     assert "Configuration conflict at spec.level1.level2.field" in str(excinfo.value)
+
+
+def test_pattern_properties_string_type_with_yaml_editor_pass():
+    """Test that patternProperties with string type + x-ui-yaml-editor is allowed."""
+    spec = {
+        "field": {
+            "type": "object",
+            "patternProperties": {"^.*$": {"type": "string"}},
+            "x-ui-yaml-editor": True
+        }
+    }
+    # Should pass silently
+    check_conflicting_ui_properties(spec)
 
 
 def test_pattern_properties_with_yaml_editor_false_pass():
@@ -193,6 +206,41 @@ def test_non_dict_values_ignored():
         "field1": "string_value",
         "field2": 123,
         "field3": {"type": "string"}
+    }
+    # Should pass silently
+    check_conflicting_ui_properties(spec)
+
+
+def test_pattern_properties_mixed_types_with_yaml_editor():
+    """Test behavior when patternProperties has mixed types (string and object)."""
+    spec = {
+        "field": {
+            "type": "object",
+            "patternProperties": {
+                "^string_.*$": {"type": "string"},
+                "^object_.*$": {"type": "object"}
+            },
+            "x-ui-yaml-editor": True
+        }
+    }
+    # Should raise error because one of the patternProperties is object type
+    with pytest.raises(click.UsageError) as excinfo:
+        check_conflicting_ui_properties(spec)
+    assert "Configuration conflict at spec.field" in str(excinfo.value)
+    assert "patternProperties of type 'object'" in str(excinfo.value)
+
+
+def test_pattern_properties_only_string_types_with_yaml_editor_pass():
+    """Test that multiple patternProperties all with string type + yaml-editor passes."""
+    spec = {
+        "field": {
+            "type": "object",
+            "patternProperties": {
+                "^config_.*$": {"type": "string"},
+                "^setting_.*$": {"type": "string"}
+            },
+            "x-ui-yaml-editor": True
+        }
     }
     # Should pass silently
     check_conflicting_ui_properties(spec)
