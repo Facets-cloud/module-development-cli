@@ -38,7 +38,7 @@ yaml_schema = {
                                             "additionalProperties": True,
                                         },
                                     },
-                                    "required": ["source", "version", "attributes"],
+                                    "required": ["source", "attributes"],
                                 }
                             },
                         },
