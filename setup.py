@@ -26,6 +26,7 @@ setup(
         "questionary",
         "facets-hcl",
         "ruamel.yaml",
+        "python-hcl2",
     ],
     packages=find_packages(
         include=["ftf_cli", "ftf_cli.commands", "ftf_cli.commands.templates"]
@@ -36,6 +37,7 @@ setup(
             "pytest>=8.3.5",
             "pytest-mock",
             "pyhcl>=0.4.5",
+            "python-hcl2",
         ],
     },
     entry_points="""
