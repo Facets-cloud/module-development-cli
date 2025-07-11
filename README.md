@@ -129,7 +129,7 @@ ftf add-variable [OPTIONS] /path/to/module
 
 #### Validate Directory
 
-Perform validation on Terraform directories including formatting checks and security scans using Checkov.
+Perform validation on Terraform directories including formatting checks, provider block checks, and security scans using Checkov.
 
 ```bash
 ftf validate-directory /path/to/module [OPTIONS]
@@ -140,6 +140,7 @@ ftf validate-directory /path/to/module [OPTIONS]
 
 **Notes**:
 - Runs `terraform fmt` for formatting verification.
+- Checks for provider blocks in all .tf files (provider blocks are not allowed in modules; use exposed providers in facets.yaml instead).
 - Runs `terraform init` to ensure initialization completeness.
 - Uses Checkov to scan Terraform files for security misconfigurations.
 - Designed for fast feedback on module quality and security.

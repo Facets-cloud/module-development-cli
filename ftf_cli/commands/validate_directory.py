@@ -4,6 +4,7 @@ from ftf_cli.utils import (
     validate_facets_yaml,
     validate_boolean,
     validate_facets_tf_vars,
+    validate_no_provider_blocks,
 )
 from checkov.runner_filter import RunnerFilter
 from checkov.terraform.runner import Runner
@@ -55,6 +56,7 @@ def validate_directory(path, check_only, skip_terraform_validation):
             click.echo(line)
 
         validate_facets_tf_vars(path)
+        validate_no_provider_blocks(path)
         click.echo(
             "✅ Terraform files are correctly formatted."
             if check_only

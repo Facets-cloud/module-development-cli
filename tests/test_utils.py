@@ -190,6 +190,8 @@ def test_lookup_tree_mixed_nested_lists():
 
 import pytest
 from ftf_cli.utils import properties_to_lookup_tree, transform_properties_to_terraform
+from ftf_cli.utils import validate_no_provider_blocks
+import os
 
 
 class TestPropertiesToLookupTree:
@@ -545,3 +547,26 @@ class TestTransformPropertiesToTerraform:
         assert any('  level1 = object({' in line for line in lines)
         assert any('    level2 = object({' in line for line in lines)
         assert any('      field = string' in line for line in lines)
+
+
+def test_validate_no_provider_blocks_detects_provider(tmp_path):
+    tf_file = tmp_path / "main.tf"
+    tf_file.write_text('provider "aws" { region = "us-west-2" }')
+    with pytest.raises(Exception) as excinfo:
+        validate_no_provider_blocks(str(tmp_path))
+    assert "Provider blocks are not allowed" in str(excinfo.value)
+
+
+def test_validate_no_provider_blocks_allows_no_provider(tmp_path):
+    tf_file = tmp_path / "main.tf"
+    tf_file.write_text('resource "aws_instance" "example" { ami = "ami-123" }')
+    # Should not raise
+    validate_no_provider_blocks(str(tmp_path))
+
+
+def test_validate_no_provider_blocks_parse_error(tmp_path):
+    tf_file = tmp_path / "main.tf"
+    tf_file.write_text('this is not valid hcl')
+    with pytest.raises(Exception) as excinfo:
+        validate_no_provider_blocks(str(tmp_path))
+    assert "Failed to parse" in str(excinfo.value)

@@ -94,6 +94,10 @@ def test_generate_module(temp_module_dir):  # temp_module_dir fixture from conft
     assert os.path.exists(os.path.join(temp_module_dir, 'expected_file'))
 ```
 
+### Provider Block Validation
+
+All validation commands now check for provider blocks in any .tf file (including nested folders). If a provider block is found, validation fails with a clear error. Modules must not contain provider blocks; use exposed providers in facets.yaml instead. This is covered by tests in `tests/test_utils.py`.
+
 ## Fixtures
 
 Common test fixtures are provided in `tests/conftest.py`:

@@ -933,3 +933,25 @@ def transform_properties_to_terraform(properties_obj, level=1):
         if not properties_obj:
             return "object({})"
         return "any"
+
+def validate_no_provider_blocks(path):
+    """
+    Recursively scan all *.tf files under path, parse with python-hcl2, and raise UsageError if any provider block is found.
+    Fail fast on parse errors.
+    """
+    tf_files = glob.glob(os.path.join(path, "**", "*.tf"), recursive=True)
+    provider_violations = []
+    for tf_file in tf_files:
+        try:
+            with open(tf_file, "r") as fp:
+                terraform_tree = hcl2.load(fp)
+            if "provider" in terraform_tree and terraform_tree["provider"]:
+                provider_violations.append(tf_file)
+        except Exception as e:
+            raise click.UsageError(f"❌ Failed to parse {tf_file}: {e}")
+    if provider_violations:
+        file_list = "\n".join(os.path.relpath(f, path) for f in provider_violations)
+        raise click.UsageError(
+            f"❌ Provider blocks are not allowed in module files. Found provider block(s) in:\n{file_list}\nUse exposed providers in facets.yaml instead."
+        )
+    click.echo("✅ No provider blocks found in Terraform files.")
