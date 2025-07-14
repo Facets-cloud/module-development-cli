@@ -410,6 +410,20 @@ Found 3 resources:
 - aws_security_group.sg (with for_each)
 ```
 
+## Note on MCP Server Generated Files
+
+Any new tf file created by the mcp server needs to be added to `facets.yaml` in this block:
+
+```
+iac:
+  validated_files:
+    - variables.tf
+    - tekton.tf
+    # ...add any new files here
+```
+
+This is only for new files created by the mcp server.
+
 ## Contribution
 
 Feel free to fork the repository and submit pull requests for any feature enhancements or bug fixes.

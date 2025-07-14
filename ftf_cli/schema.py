@@ -94,6 +94,16 @@ yaml_schema = {
             "required": ["primary"],
         },
         "metadata": Draft7Validator.META_SCHEMA,
+        "iac": {
+            "type": "object",
+            "properties": {
+                "validated_files": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            },
+            "additionalProperties": True
+        },
     },
     "required": ["intent", "flavor", "version", "description", "spec", "clouds"],
 }
