@@ -1,6 +1,10 @@
 import pytest
 import click
 from ftf_cli.utils import check_no_array_or_invalid_pattern_in_spec, check_conflicting_ui_properties
+import os
+import tempfile
+import yaml
+from ftf_cli.utils import validate_yaml
 
 
 def test_no_array_type_pass():
@@ -244,3 +248,68 @@ def test_pattern_properties_only_string_types_with_yaml_editor_pass():
     }
     # Should pass silently
     check_conflicting_ui_properties(spec)
+
+
+def test_facets_yaml_with_valid_iac_block():
+    data = {
+        "intent": "test",
+        "flavor": "default",
+        "version": "1.0",
+        "description": "desc",
+        "spec": {},
+        "clouds": ["aws"],
+        "iac": {
+            "validated_files": ["variables.tf", "tekton.tf"]
+        }
+    }
+    # Should pass validation
+    validate_yaml(data)
+
+
+def test_facets_yaml_with_iac_not_object():
+    data = {
+        "intent": "test",
+        "flavor": "default",
+        "version": "1.0",
+        "description": "desc",
+        "spec": {},
+        "clouds": ["aws"],
+        "iac": "not-an-object"
+    }
+    with pytest.raises(click.UsageError) as excinfo:
+        validate_yaml(data)
+    assert "iac" in str(excinfo.value)
+
+
+def test_facets_yaml_with_iac_validated_files_not_array():
+    data = {
+        "intent": "test",
+        "flavor": "default",
+        "version": "1.0",
+        "description": "desc",
+        "spec": {},
+        "clouds": ["aws"],
+        "iac": {
+            "validated_files": "not-an-array"
+        }
+    }
+    with pytest.raises(click.UsageError) as excinfo:
+        validate_yaml(data)
+    assert "validated_files" in str(excinfo.value)
+
+
+def test_facets_yaml_with_iac_validated_files_array_of_non_strings():
+    data = {
+        "intent": "test",
+        "flavor": "default",
+        "version": "1.0",
+        "description": "desc",
+        "spec": {},
+        "clouds": ["aws"],
+        "iac": {
+            "validated_files": [1, 2, 3]
+        }
+    }
+    with pytest.raises(click.UsageError) as excinfo:
+        validate_yaml(data)
+    assert "validated_files" in str(excinfo.value)
