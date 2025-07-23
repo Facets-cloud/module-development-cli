@@ -80,3 +80,5 @@ dotenv
 
 # Claude AI local settings
 .claude/settings.local.json
+
+uv.lock
