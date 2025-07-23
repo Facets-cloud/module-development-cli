@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ftf-cli"
+description = "Facets Terraform Cli"
+authors = [
+    {name = "Sanmesh Kakade", email = "sanmesh.kakade@facets.cloud"}
+]
+keywords = ["Facets", "CLI", "Terraform"]
+readme = "README.md"
+requires-python = ">=3.11"
+dynamic = ["version"]
+
+dependencies = [
+    "Click",
+    "Jinja2",
+    "PyYAML",
+    "checkov",
+    "jsonschema",
+    "requests",
+    "questionary",
+    "facets-hcl",
+    "ruamel.yaml",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-mock",
+    "pyhcl>=0.4.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/Facets-cloud/module-development-cli"
+Repository = "https://github.com/Facets-cloud/module-development-cli"
+
+[project.scripts]
+ftf = "ftf_cli.cli:cli"
+
+[tool.setuptools.packages.find]
+include = ["ftf_cli", "ftf_cli.commands", "ftf_cli.commands.templates"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {file = "VERSION"}

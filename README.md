@@ -49,8 +49,8 @@ To install FTF CLI from source, follow these steps:
 2. **Create a virtual environment** (recommended):
 
    ```bash
-   python -m venv env
-   source env/bin/activate   # On Windows use `env\Scripts\activate`
+   uv sync
+   source .venv/bin/activate   # On Windows use `.venv\Scripts\activate`
    ```
 
 3. **Install the package**:
@@ -126,6 +126,7 @@ ftf add-variable [OPTIONS] /path/to/module
 - Preserves terraform formatting while adding variables.
 - Performs type validation before addition.
 - Nested variables create the necessary nested structure internally.
+- Pattern properties support regex validation for dynamic keys.
 
 #### Validate Directory
 
@@ -137,10 +138,11 @@ ftf validate-directory /path/to/module [OPTIONS]
 
 **Options**:
 - `--check-only`: Only check formatting; does not make any changes.
+- `--skip-terraform-validation`: Skip Terraform validation steps if set to true.
 
 **Notes**:
 - Runs `terraform fmt` for formatting verification.
-- Runs `terraform init` to ensure initialization completeness.
+- Runs `terraform init` to ensure initialization completeness (unless skipped).
 - Uses Checkov to scan Terraform files for security misconfigurations.
 - Designed for fast feedback on module quality and security.
 
@@ -209,6 +211,8 @@ ftf preview-module /path/to/module [OPTIONS]
 - `-g, --git-repo-url`: Git repository URL where the module source code resides.
 - `-r, --git-ref`: Git ref, branch, or tag for the module version.
 - `--publish`: Flag to publish the module immediately after preview.
+- `--skip-terraform-validation`: Skip Terraform validation steps if set to true.
+- `--skip-output-write`: Do not update the output type in facets. Set to true only if you have already registered the output type before calling this command.
 
 **Notes**:
 - Environment variables such as GIT_REPO_URL, GIT_REF, FACETS_PROFILE can be used for automation or CI pipelines.
@@ -249,6 +253,7 @@ Automatically discovers resources in the module and prompts for selecting a reso
 - `--resource`: The Terraform resource address to import (e.g., 'aws_s3_bucket.bucket').
 - `--index`: For resources with 'count', specify the index (e.g., '0', '1', or '*' for all).
 - `--key`: For resources with 'for_each', specify the key (e.g., 'my-key' or '*' for all).
+- `--resource-address`: The full resource address to import (e.g., 'azurerm_key_vault.for_each_key_vault[0]'). If provided, runs in non-interactive mode and skips resource discovery.
 
 **Examples**:
 ```bash
@@ -292,7 +297,7 @@ ftf delete-module [OPTIONS]
 - `-i, --intent`: (prompt) Intent of the module to delete.
 - `-f, --flavor`: (prompt) Flavor of the module.
 - `-v, --version`: (prompt) Version of the module.
-- `-s, --stage`: (prompt) Deployment stage of the module.
+- `-s, --stage`: (prompt) Deployment stage of the module (choices: "PUBLISHED", "PREVIEW").
 - `-p, --profile`: (prompt) Authentication profile to use (default: "default").
 
 #### Get Output Types
