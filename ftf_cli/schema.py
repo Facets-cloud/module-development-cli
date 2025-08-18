@@ -104,6 +104,10 @@ yaml_schema = {
             },
             "additionalProperties": True
         },
+        "name_length_limit": {
+            "type": "integer",
+            "minimum": 1,
+        }
     },
     "required": ["intent", "flavor", "version", "description", "spec", "clouds"],
 }
