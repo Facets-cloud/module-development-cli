@@ -43,7 +43,7 @@ def create_module_zip(path: str) -> str:
 
     try:
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-            for root, dirs, files in os.walk(path):
+            for root, dirs, files in os.walk(path, followlinks=True):
                 for file in files:
                     file_path = os.path.join(root, file)
                     arcname = os.path.relpath(file_path, path)
