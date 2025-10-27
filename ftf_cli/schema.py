@@ -130,15 +130,34 @@ spec_schema = {
         "x-ui-yaml-editor": {"type": "boolean"},
         "x-ui-error-message": {"type": "string"},
         "x-ui-visible-if": {
-            "type": "object",
-            "properties": {
-                "field": {"type": "string", "pattern": r"^spec\..+"},
-                "values": {
-                    "type": "array",
-                    "minItems": 1,
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "field": {"type": "string", "pattern": r"^spec\..+"},
+                        "values": {
+                            "type": "array",
+                            "minItems": 1,
+                        },
+                    },
+                    "required": ["field", "values"],
                 },
-            },
-            "required": ["field", "values"],
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "field": {"type": "string", "pattern": r"^spec\..+"},
+                            "values": {
+                                "type": "array",
+                                "minItems": 1,
+                            },
+                        },
+                        "required": ["field", "values"],
+                    },
+                    "minItems": 1,
+                }
+            ]
         },
     },
     "additionalProperties": {
