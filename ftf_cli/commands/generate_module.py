@@ -22,7 +22,24 @@ import importlib.resources as pkg_resources
     help="The version of the module. If not provided, the default version will be 1.0. and the module will increment the version number.",
 )
 def generate_module(path, intent, flavor, cloud, title, description, version):
-    """Generate a new module."""
+    """
+    Generate a new module by rendering built-in templates into a target directory.
+    
+    Parameters:
+        path (str): Destination base path where the module directory will be created.
+        intent (str): Intent name used to construct the module path and passed to templates.
+        flavor (str): Flavor name used to construct the module path and passed to templates.
+        cloud (str): Cloud identifier or comma-separated list of clouds (e.g., "aws" or "aws,azure").
+        title (str): Human-readable title passed into templates.
+        description (str): Description text passed into templates.
+        version (str): Version identifier appended to the module path; must not be a digits-only string.
+    
+    Raises:
+        click.UsageError: If `version` is digits-only, if the requested version already exists, or if version parsing fails when attempting to suggest an alternate version.
+    
+    Side effects:
+        Creates the module directory (including parent directories) and writes rendered template files into it.
+    """
     if str(version).isdigit():
         raise click.UsageError(
             f"❌ Version {version} is not a valid version. Use a valid version like 1.0"
