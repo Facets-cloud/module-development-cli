@@ -95,7 +95,7 @@ ftf generate-module [OPTIONS] /path/to/module
 **Options**:
 - `-i, --intent`: (prompt) The intent or purpose of the module.
 - `-f, --flavor`: (prompt) The flavor or variant of the module.
-- `-c, --cloud`: (prompt) Target cloud provider (e.g. aws, gcp, azure).
+- `-c, --cloud`: (prompt) Target cloud provider(s). Supports single (e.g. aws) or comma-separated multiple clouds (e.g. aws,gcp,azure).
 - `-t, --title`: (prompt) Human-readable title of the module.
 - `-d, --description`: (prompt) Description outlining module functionality.
 
