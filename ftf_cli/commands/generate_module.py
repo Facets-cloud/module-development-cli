@@ -57,6 +57,9 @@ def generate_module(path, intent, flavor, cloud, title, description, version):
     templates_path = pkg_resources.files("ftf_cli.commands.templates")
     env = Environment(loader=FileSystemLoader(str(templates_path)))
 
+    # Parse cloud input: supports both single ("aws") and multiple ("aws,azure,gcp")
+    cloud_list = [c.strip() for c in cloud.split(',')]
+
     # Render and write templates
     for template_name in [
         "main.tf.j2",
@@ -69,6 +72,7 @@ def generate_module(path, intent, flavor, cloud, title, description, version):
             intent=intent,
             flavor=flavor,
             cloud=cloud,
+            clouds=cloud_list,
             title=title,
             description=description,
         )
