@@ -1,3 +1,7 @@
+> **⚠️ DEPRECATED**: This repository is no longer maintained. Please use [Raptor](https://github.com/Facets-cloud/raptor-releases) instead.
+
+---
+
 # FTF CLI
 
 FTF CLI is a command-line interface (CLI) tool that facilitates module generation, variable management, validation, and registration in Terraform.
